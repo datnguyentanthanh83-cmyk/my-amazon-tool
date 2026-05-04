@@ -1,0 +1,2093 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Amazon Keyword Intelligence & PPC Matrix Tool</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:#0d1117; --bg2:#161b27; --bg3:#1c2233; --bg4:#212840;
+      --border:#30363d; --border2:#21262d;
+      --text:#e1e4e8; --text2:#c9d1d9; --muted:#8b949e;
+      --accent:#f0a500; --accent2:#d4920a;
+      --green:#2ea043; --blue:#388bfd; --red:#e74c3c;
+      --orange:#e67e22; --yellow:#f1c40f; --gray:#6e7681;
+    }
+    body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+    /* ── HEADER ── */
+    .header { background:linear-gradient(135deg,#13192a,#1e2540); border-bottom:1px solid var(--border); padding:16px 28px; display:flex; align-items:center; gap:12px; position:sticky; top:0; z-index:200; }
+    .header-icon { font-size:28px; }
+    .header h1  { font-size:19px; font-weight:700; color:var(--accent); letter-spacing:-.3px; }
+    .header p   { font-size:12px; color:var(--muted); margin-top:1px; }
+    .header-right { margin-left:auto; display:flex; gap:8px; align-items:center; }
+    .badge { background:#1d2545; border:1px solid #3b4a7a; color:#7ca3f0; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; }
+    .btn-admin { background:#1c2233; border:1px solid #3a3f5c; color:#a8b4d8; font-size:12px; font-weight:600; padding:6px 14px; border-radius:7px; cursor:pointer; display:flex; align-items:center; gap:6px; transition:all .15s; }
+    .btn-admin:hover { background:#252d4a; border-color:#5a6a9a; color:var(--text2); }
+
+    /* ── LAYOUT ── */
+    .container { max-width:1500px; margin:0 auto; padding:24px 28px; }
+
+    /* ── UPLOAD ── */
+    .upload-area { border:2px dashed var(--border); border-radius:14px; padding:52px 32px; text-align:center; cursor:pointer; transition:all .2s; background:var(--bg2); }
+    .upload-area:hover,.upload-area.drag-over { border-color:var(--accent); background:#1a2035; transform:translateY(-1px); box-shadow:0 8px 32px rgba(240,165,0,.08); }
+    .upload-icon { font-size:50px; margin-bottom:12px; }
+    .upload-area h2 { font-size:19px; font-weight:600; color:var(--text2); margin-bottom:7px; }
+    .upload-area p  { font-size:13px; color:var(--muted); line-height:1.6; }
+    .pill { display:inline-block; margin-top:14px; background:var(--bg3); border:1px solid var(--border); color:var(--muted); font-size:11px; padding:4px 12px; border-radius:20px; }
+
+    /* ── BUTTONS ── */
+    .btn { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; border-radius:7px; border:none; cursor:pointer; font-size:13px; font-weight:600; transition:all .15s; }
+    .btn-primary { background:var(--accent); color:#0d1117; }
+    .btn-primary:hover { background:var(--accent2); }
+    .btn-success { background:#1a6e2e; color:#56d364; border:1px solid #2ea043; }
+    .btn-success:hover { background:#238636; color:#fff; }
+    .btn-outline  { background:transparent; border:1px solid var(--border); color:var(--text2); }
+    .btn-outline:hover  { background:var(--bg3); }
+    .btn-ppc { background:linear-gradient(135deg,#1a2d6e,#2a3d8a); border:1px solid #3a5ab0; color:#88aaee; font-size:13px; font-weight:700; padding:10px 20px; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; gap:8px; transition:all .2s; }
+    .btn-ppc:hover { background:linear-gradient(135deg,#1f3680,#3048a8); color:#aaccff; transform:translateY(-1px); box-shadow:0 4px 16px rgba(56,139,253,.2); }
+    .btn-ppc:disabled { opacity:.4; cursor:not-allowed; transform:none; }
+
+    /* ── PANEL / CARD ── */
+    .panel { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:22px; }
+    .panel-title    { font-size:14px; font-weight:700; color:var(--accent); margin-bottom:5px; }
+    .panel-subtitle { font-size:12px; color:var(--muted); margin-bottom:18px; }
+    .mapping-grid   { display:grid; grid-template-columns:repeat(auto-fill,minmax(255px,1fr)); gap:12px; }
+    .map-item label { display:block; font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
+    .map-item label .req { color:var(--red); }
+    .map-item select { width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text2); padding:6px 9px; border-radius:6px; font-size:13px; }
+    .map-item select:focus { outline:none; border-color:var(--accent); }
+    .map-item select.ok  { border-color:var(--green); }
+    .map-item select.bad { border-color:var(--red); }
+    .match-hint { font-size:11px; margin-top:3px; }
+    .match-hint.ok  { color:var(--green); }
+    .match-hint.bad { color:var(--muted); }
+
+    /* ── STATS ── */
+    .stats-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:20px; }
+    .stat-card { background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:14px 18px; }
+    .stat-card .val { font-size:24px; font-weight:700; color:var(--accent); font-variant-numeric:tabular-nums; }
+    .stat-card .lbl { font-size:11px; color:var(--muted); margin-top:2px; }
+
+    /* ── CATEGORY CARDS ── */
+    .cat-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:11px; margin-bottom:20px; }
+    .cat-card { background:var(--bg2); border:1px solid var(--border); border-left:4px solid; border-radius:10px; padding:13px 15px; cursor:pointer; transition:all .15s; }
+    .cat-card:hover  { transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,.3); }
+    .cat-card.active { background:var(--bg3); }
+    .cat-card .emoji { font-size:20px; }
+    .cat-card .cnt   { font-size:26px; font-weight:700; line-height:1.1; margin:3px 0 2px; font-variant-numeric:tabular-nums; }
+    .cat-card .name  { font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; }
+    .cat-card .pct   { font-size:10px; color:var(--muted); margin-top:1px; }
+    .cc  { border-left-color:var(--green);  } .cc  .cnt { color:var(--green); }
+    .hp  { border-left-color:var(--blue);   } .hp  .cnt { color:var(--blue); }
+    .tw  { border-left-color:var(--red);    } .tw  .cnt { color:var(--red); }
+    .lb  { border-left-color:var(--orange); } .lb  .cnt { color:var(--orange); }
+    .qw  { border-left-color:var(--yellow); } .qw  .cnt { color:var(--yellow); }
+    .zb  { border-left-color:var(--gray);   } .zb  .cnt { color:var(--gray); }
+    /* ── Module 2 new labels ── */
+    .vs  { border-left-color:#00d4aa; } .vs  .cnt { color:#00d4aa; }
+    .gt  { border-left-color:#9b59b6; } .gt  .cnt { color:#9b59b6; }
+    .ua  { border-left-color:#3498db; } .ua  .cnt { color:#3498db; }
+    .lb2 { border-left-color:#ff6b35; } .lb2 .cnt { color:#ff6b35; }
+    .ct  { border-left-color:#e91e63; } .ct  .cnt { color:#e91e63; }
+
+    /* ── CHART ROW ── */
+    .chart-row { display:grid; grid-template-columns:240px 1fr; gap:16px; margin-bottom:20px; }
+    .chart-panel { background:var(--bg2); border:1px solid var(--border); border-radius:12px; padding:16px; }
+    .chart-panel h3 { font-size:12px; font-weight:700; color:var(--muted); margin-bottom:10px; text-transform:uppercase; letter-spacing:.5px; }
+    .chart-container { position:relative; height:190px; }
+    .donut-legend { margin-top:8px; }
+    .dl-item { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--muted); margin-bottom:3px; }
+    .dl-dot  { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+
+    /* ── ALERTS ── */
+    .alert { padding:10px 14px; border-radius:8px; margin-bottom:8px; font-size:12.5px; line-height:1.5; }
+    .alert-warn { background:#2a1a06; border:1px solid #6b3d0a; color:#f0a060; }
+    .alert-info { background:#061526; border:1px solid #0d3060; color:#6098e0; }
+
+    /* ── TABLE ── */
+    .tbl-container { background:var(--bg2); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+    .toolbar { display:flex; gap:9px; align-items:center; flex-wrap:wrap; padding:12px 16px; border-bottom:1px solid var(--border); }
+    .toolbar select, .toolbar input[type="text"] { background:var(--bg); border:1px solid var(--border); color:var(--text2); padding:6px 10px; border-radius:6px; font-size:12px; }
+    .toolbar select:focus,.toolbar input:focus { outline:none; border-color:var(--accent); }
+    .toolbar input[type="text"] { width:190px; }
+    .showing-info { margin-left:auto; font-size:11px; color:var(--muted); }
+    .tbl-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:12.5px; }
+    thead { position:sticky; top:0; z-index:2; background:#1a2035; }
+    th { padding:9px 12px; text-align:left; font-weight:600; color:var(--muted); white-space:nowrap; border-bottom:2px solid var(--border); cursor:pointer; user-select:none; }
+    th:hover { color:var(--text2); }
+    td { padding:7px 12px; border-bottom:1px solid var(--border2); white-space:nowrap; vertical-align:middle; }
+    tr:hover td { background:rgba(255,255,255,.022); }
+    .num { text-align:right; font-variant-numeric:tabular-nums; }
+    .lbl { display:inline-block; padding:2px 8px; border-radius:20px; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
+    .lbl-cc  { background:#0b2215; color:#2ea043; }
+    .lbl-hp  { background:#091428; color:#388bfd; }
+    .lbl-tw  { background:#250d0d; color:#e74c3c; }
+    .lbl-lb  { background:#221208; color:#e67e22; }
+    .lbl-qw  { background:#221d00; color:#f1c40f; }
+    .lbl-zb  { background:#171a1e; color:#6e7681; }
+    .lbl-burn{ background:#3d0000; color:#ff5555; border:1px solid #6a0000; margin-left:4px; font-size:9px; }
+    /* Module 2 labels */
+    .lbl-vs  { background:#002a22; color:#00d4aa; border:1px solid #005540; }
+    .lbl-gt  { background:#1f0933; color:#9b59b6; border:1px solid #3d1266; }
+    .lbl-ua  { background:#051428; color:#3498db; border:1px solid #0a3060; }
+    .lbl-lb2 { background:#2a1005; color:#ff6b35; border:1px solid #5a2a00; }
+    .lbl-ct  { background:#2a0015; color:#e91e63; border:1px solid #6a003a; }
+    .lbl-m2  { font-size:9px; background:#0a0a1a; color:#5060a0; border:1px solid #2a2a50; margin-left:3px; padding:1px 5px; }
+    .hi  { color:#2ea043; } .lo { color:#e74c3c; } .mid { color:#f1c40f; }
+    .export-bar { display:flex; align-items:center; justify-content:space-between; background:var(--bg2); border:1px solid var(--border); border-radius:10px; padding:12px 16px; margin-bottom:12px; }
+    .export-bar .meta { font-size:12px; color:var(--muted); }
+    .export-bar .meta strong { color:var(--text2); }
+    .sec-hdr  { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+    .sec-title { font-size:13px; font-weight:700; color:var(--text2); }
+    .empty { text-align:center; padding:36px; color:var(--muted); font-size:13px; }
+    .gap8 { display:flex; gap:8px; }
+    .mt16 { margin-top:16px; }
+    .mt20 { margin-top:20px; }
+    .truncate { max-width:200px; overflow:hidden; text-overflow:ellipsis; }
+
+    /* ═══════════════════════════════════════
+       ADMIN PANEL
+    ═══════════════════════════════════════ */
+    .admin-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:900; display:none; }
+    .admin-overlay.open { display:block; }
+
+    .admin-panel {
+      position:fixed; right:0; top:0; bottom:0; width:460px;
+      background:#0f1520; border-left:1px solid #2a3050;
+      z-index:901; transform:translateX(100%);
+      transition:transform .25s cubic-bezier(.4,0,.2,1);
+      display:flex; flex-direction:column; overflow:hidden;
+    }
+    .admin-panel.open { transform:translateX(0); }
+
+    .admin-hdr { padding:16px 20px; border-bottom:1px solid #2a3050; display:flex; align-items:center; justify-content:space-between; background:linear-gradient(135deg,#13192e,#1e2a40); }
+    .admin-hdr h2 { font-size:15px; font-weight:700; color:var(--accent); }
+    .admin-hdr p  { font-size:11px; color:var(--muted); margin-top:2px; }
+    .admin-close  { background:#1e2540; border:1px solid #3a4060; color:var(--muted); width:28px; height:28px; border-radius:6px; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+    .admin-close:hover { background:#2a3055; color:var(--text2); }
+
+    .admin-tabs { display:flex; border-bottom:1px solid #2a3050; background:#0f1520; }
+    .atab { flex:1; padding:9px 4px; text-align:center; font-size:11.5px; font-weight:600; color:var(--muted); cursor:pointer; border-bottom:2px solid transparent; transition:all .15s; }
+    .atab:hover  { color:var(--text2); }
+    .atab.active { color:var(--accent); border-bottom-color:var(--accent); }
+
+    .admin-body { flex:1; overflow-y:auto; padding:16px 18px; }
+    .admin-body::-webkit-scrollbar { width:4px; }
+    .admin-body::-webkit-scrollbar-thumb { background:#2a3050; border-radius:2px; }
+
+    .admin-group { margin-bottom:18px; }
+    .admin-group-title { font-size:12px; font-weight:700; color:var(--text2); margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid #2a3050; display:flex; align-items:center; gap:6px; }
+    .param-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+    .param-row label { flex:1; font-size:12px; color:var(--muted); }
+    .param-row label em { display:block; font-size:10px; font-style:normal; color:#5a6070; margin-top:1px; }
+    .param-input { width:90px; background:var(--bg); border:1px solid var(--border); color:var(--text2); padding:5px 9px; border-radius:6px; font-size:13px; text-align:right; }
+    .param-input:focus { outline:none; border-color:var(--accent); }
+    .param-unit { font-size:11px; color:var(--muted); width:22px; }
+    .param-badge { font-size:10px; font-weight:700; padding:2px 7px; border-radius:12px; white-space:nowrap; }
+
+    .admin-ftr { padding:14px 18px; border-top:1px solid #2a3050; background:#0a0e18; display:flex; gap:8px; }
+    .btn-save-params { flex:1; background:var(--accent); color:#0d1117; font-weight:700; padding:9px; border:none; border-radius:7px; cursor:pointer; font-size:13px; transition:all .15s; }
+    .btn-save-params:hover { background:var(--accent2); }
+    .btn-reset-params { background:#1c2233; border:1px solid var(--border); color:var(--muted); padding:9px 14px; border-radius:7px; cursor:pointer; font-size:13px; transition:all .15s; }
+    .btn-reset-params:hover { background:var(--bg3); color:var(--text2); }
+    .params-dirty-note { font-size:11px; color:var(--orange); margin-top:6px; display:none; }
+
+    /* ═══════════════════════════════════════
+       PPC INTEGRATION SECTION
+    ═══════════════════════════════════════ */
+    .ppc-section { margin-top:24px; }
+    .ppc-section-hdr { background:linear-gradient(135deg,#0e1830,#152040); border:1px solid #2a4070; border-radius:12px 12px 0 0; padding:14px 20px; display:flex; align-items:center; justify-content:space-between; cursor:pointer; }
+    .ppc-section-hdr h3 { font-size:14px; font-weight:700; color:#88aaee; display:flex; align-items:center; gap:8px; }
+    .ppc-section-hdr p  { font-size:12px; color:#5070a0; margin-top:2px; }
+    .ppc-section-body   { background:#0c1220; border:1px solid #2a4070; border-top:none; border-radius:0 0 12px 12px; padding:20px; }
+    .ppc-toggle { color:#5070a0; font-size:18px; transition:transform .2s; }
+    .ppc-toggle.open { transform:rotate(180deg); }
+
+    .ppc-step  { display:flex; align-items:flex-start; gap:12px; margin-bottom:16px; }
+    .ppc-step-num { background:#1a2a5a; color:#6090d0; width:24px; height:24px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; margin-top:1px; }
+    .ppc-step-content { flex:1; }
+    .ppc-step-title { font-size:12px; font-weight:700; color:var(--text2); margin-bottom:5px; }
+
+    .ppc-upload-mini { border:2px dashed #2a4070; border-radius:8px; padding:14px; text-align:center; cursor:pointer; transition:all .15s; background:#0e1830; }
+    .ppc-upload-mini:hover { border-color:#5070b0; background:#121e3a; }
+    .ppc-upload-mini p  { font-size:12px; color:#5070a0; }
+    .ppc-upload-mini .file-ok { font-size:12px; color:var(--green); }
+
+    /* PPC Config table */
+    .ppc-cfg-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+    .ppc-field label { display:block; font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; margin-bottom:4px; }
+    .ppc-field input, .ppc-field select { width:100%; background:var(--bg); border:1px solid var(--border); color:var(--text2); padding:6px 10px; border-radius:6px; font-size:13px; }
+    .ppc-field input:focus, .ppc-field select:focus { outline:none; border-color:#5070b0; }
+
+    .ppc-label-table { width:100%; border-collapse:collapse; font-size:12px; margin-bottom:14px; }
+    .ppc-label-table th { padding:7px 10px; text-align:left; font-weight:600; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.4px; border-bottom:1px solid #2a3050; background:#0e1830; }
+    .ppc-label-table td { padding:6px 10px; border-bottom:1px solid #182030; vertical-align:middle; }
+    .ppc-label-table tr:hover td { background:#0f1828; }
+    .ppc-label-table select, .ppc-label-table input[type="number"] { background:var(--bg); border:1px solid var(--border); color:var(--text2); padding:4px 7px; border-radius:5px; font-size:11.5px; width:100%; }
+    .ppc-label-table select:focus, .ppc-label-table input[type="number"]:focus { outline:none; border-color:#5070b0; }
+    .row-disabled td { opacity:.35; }
+
+    .ppc-preview { background:#080e18; border:1px solid #1a2840; border-radius:8px; padding:12px 16px; margin-bottom:14px; font-size:12px; }
+    .ppc-preview-stat { display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid #141e30; color:var(--muted); }
+    .ppc-preview-stat:last-child { border:none; }
+    .ppc-preview-stat strong { color:var(--text2); }
+
+    .ppc-actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .ppc-save-note { font-size:11px; color:#5070a0; }
+
+    [data-tip] { position:relative; cursor:help; }
+    [data-tip]:hover::after { content:attr(data-tip); position:absolute; bottom:130%; left:50%; transform:translateX(-50%); background:#1e2740; border:1px solid var(--border); color:var(--text2); font-size:11px; padding:5px 9px; border-radius:6px; white-space:nowrap; z-index:99; pointer-events:none; }
+
+    .hidden { display:none !important; }
+    input[type="checkbox"] { accent-color:var(--accent); width:14px; height:14px; cursor:pointer; }
+
+    /* ═══════════════════════════════════════
+       SQP MODULE 1 — REALITY CHECK
+    ═══════════════════════════════════════ */
+    .sqp-banner { background:linear-gradient(135deg,#080f20,#0d1830); border:1px solid #1e3a6e; border-left:4px solid #388bfd; border-radius:12px; padding:14px 20px; display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:16px; }
+    .sqp-banner-left { display:flex; align-items:center; gap:12px; }
+    .sqp-banner-icon { font-size:26px; }
+    .sqp-banner-title { font-size:13px; font-weight:700; color:#88aaee; margin-bottom:2px; display:flex; align-items:center; gap:7px; }
+    .sqp-banner-sub  { font-size:11px; color:#4a6a9a; }
+    .sqp-new-badge   { background:#1a3a6e; color:#6090d0; font-size:9px; font-weight:700; padding:2px 7px; border-radius:20px; letter-spacing:.4px; }
+    .sqp-banner-right { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+    .sqp-drop { background:#0a1428; border:2px dashed #2a4070; border-radius:8px; padding:8px 20px; cursor:pointer; color:#5a80b8; font-size:12px; font-weight:600; transition:all .15s; white-space:nowrap; }
+    .sqp-drop:hover  { border-color:#5070c0; background:#0f1c3a; color:#88aaee; transform:translateY(-1px); }
+    .sqp-loaded-row  { display:flex; align-items:center; gap:10px; }
+    .sqp-matched-lbl { font-size:12px; color:var(--green); font-weight:600; }
+    .sqp-clear-btn   { background:transparent; border:1px solid #2a3050; color:#4a5a7a; font-size:11px; padding:4px 10px; border-radius:5px; cursor:pointer; transition:all .15s; }
+    .sqp-clear-btn:hover { border-color:var(--red); color:var(--red); }
+
+    .sqp-kpi-strip { display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap; }
+    .sqp-kpi { background:#06101e; border:1px solid #1a2840; border-radius:9px; padding:11px 16px; flex:1; min-width:130px; text-align:center; }
+    .sqp-kpi-val { font-size:20px; font-weight:700; color:#388bfd; font-variant-numeric:tabular-nums; }
+    .sqp-kpi-lbl { font-size:10px; color:var(--muted); margin-top:2px; }
+    .sqp-kpi-sub { font-size:9px; color:#2a3a50; margin-top:1px; }
+
+    th.sqp-th { color:#4a7ab8; font-size:11px; }
+    td.sqp-col { background:rgba(56,139,253,0.03); }
+    .sog-hi { color:#f0a500; font-weight:700; }
+    .sog-lo { color:var(--muted); }
+
+    /* ── PES V2 color coding (Module 3) ── */
+    .pesv2-hi  { color:var(--green); font-weight:700; }
+    .pesv2-mid { color:var(--yellow); }
+    .pesv2-lo  { color:var(--red); }
+
+    /* ── Budget Forecaster Widget (Module 3) ── */
+    .budget-forecaster { background:linear-gradient(135deg,#080f20,#0d1c38); border:1px solid #1e4070; border-left:4px solid var(--accent); border-radius:12px; padding:16px 20px; margin-bottom:16px; }
+    .bf-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+    .bf-title  { font-size:13px; font-weight:700; color:var(--accent); display:flex; align-items:center; gap:7px; }
+    .bf-sub    { font-size:11px; color:#4a6a8a; margin-top:2px; }
+    .bf-grid   { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; margin-bottom:12px; }
+    .bf-card   { background:#06101e; border:1px solid #1a3050; border-radius:9px; padding:11px 14px; text-align:center; min-width:0; }
+    .bf-val    { font-size:20px; font-weight:700; color:var(--accent); font-variant-numeric:tabular-nums; }
+    .bf-lbl    { font-size:10px; color:var(--muted); margin-top:2px; }
+    .bf-price-row { display:flex; align-items:center; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+    .bf-price-row label { font-size:12px; color:var(--muted); font-weight:600; }
+    .bf-price-input { background:var(--bg); border:1px solid #2a4060; color:var(--text2); padding:6px 10px; border-radius:6px; font-size:14px; font-weight:700; width:110px; text-align:right; }
+    .bf-price-input:focus { outline:none; border-color:var(--accent); }
+    .bf-kw-list { margin-top:4px; }
+    .bf-kw-hdr  { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; padding-bottom:5px; border-bottom:1px solid #1a3050; margin-bottom:4px; display:grid; grid-template-columns:1fr 80px 80px 90px; gap:8px; }
+    .bf-kw-row  { font-size:11.5px; color:var(--text2); padding:4px 0; border-bottom:1px solid #0e1a28; display:grid; grid-template-columns:1fr 80px 80px 90px; gap:8px; align-items:center; }
+    .bf-kw-row:last-child { border:none; }
+    .bf-kw-lbl  { color:#88aaee; font-size:9px; font-weight:700; background:#0a1a30; padding:1px 5px; border-radius:10px; margin-left:4px; }
+
+    @media(max-width:900px) {
+      .cat-grid    { grid-template-columns:repeat(3,1fr); }
+      .stats-grid  { grid-template-columns:repeat(2,1fr); }
+      .chart-row   { grid-template-columns:1fr; }
+      .admin-panel { width:100%; }
+      .ppc-cfg-grid { grid-template-columns:1fr; }
+      /* Module 3 responsive */
+      .bf-kw-hdr, .bf-kw-row { grid-template-columns:1fr 64px 64px 72px; }
+      .bf-price-row { flex-direction:column; align-items:flex-start; gap:6px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════ HEADER ═══════════════ -->
+<header class="header">
+  <div class="header-icon">🎯</div>
+  <div>
+    <h1>Amazon Keyword Intelligence &amp; PPC Matrix Tool</h1>
+    <p>Helium 10 Cerebro · SQP Reality Validator · 6-Quadrant Classification · Admin Console · PPC Auto-Fill</p>
+  </div>
+  <div class="header-right">
+    <button class="btn-admin" onclick="openAdmin()">⚙️ Admin Console</button>
+    <span class="badge" style="background:#0e1e3a;border-color:#2a4a8a;color:#88aaee">v2.0 Elite</span>
+  </div>
+</header>
+
+<!-- ═══════════════ ADMIN OVERLAY ═══════════════ -->
+<div class="admin-overlay" id="admin-overlay" onclick="closeAdmin()"></div>
+
+<!-- ═══════════════ ADMIN PANEL ═══════════════ -->
+<div class="admin-panel" id="admin-panel">
+  <div class="admin-hdr">
+    <div>
+      <h2>⚙️ Admin Console</h2>
+      <p>Tuning parameters · changes persist across sessions</p>
+    </div>
+    <button class="admin-close" onclick="closeAdmin()">✕</button>
+  </div>
+
+  <div class="admin-tabs">
+    <div class="atab active" id="atab-matrix"   onclick="switchATab('matrix')">📊 Matrix Rules</div>
+    <div class="atab"        id="atab-antibias"  onclick="switchATab('antibias')">🛡️ Anti-Bias</div>
+    <div class="atab"        id="atab-reality"   onclick="switchATab('reality')">🎯 Reality</div>
+    <div class="atab"        id="atab-ppcdef"    onclick="switchATab('ppcdef')">💡 PPC</div>
+  </div>
+
+  <div class="admin-body">
+
+    <!-- ── TAB: MATRIX ── -->
+    <div id="apane-matrix">
+      <div class="admin-group">
+        <div class="admin-group-title"><span class="lbl lbl-cc">CASH COW</span></div>
+        <div class="param-row">
+          <label>Organic Rank ≤ <em>Ranking tối đa để gọi là đang top</em></label>
+          <input class="param-input" type="number" id="p_cc_rank" min="1" max="100" step="1" oninput="markDirty()">
+          <span class="param-unit"></span>
+        </div>
+        <div class="param-row">
+          <label>APR ≥ <em>Tỉ lệ chuyển đổi/click tối thiểu</em></label>
+          <input class="param-input" type="number" id="p_cc_apr" min="0" max="10" step="0.01" oninput="markDirty()">
+          <span class="param-unit"></span>
+        </div>
+      </div>
+
+      <div class="admin-group">
+        <div class="admin-group-title"><span class="lbl lbl-hp">HIDDEN POTENTIAL</span></div>
+        <div class="param-row">
+          <label>Amazon Rec. Rank ≤ <em>Thuật toán Amazon đánh giá cao</em></label>
+          <input class="param-input" type="number" id="p_hp_rec" min="1" max="100" step="1" oninput="markDirty()">
+        </div>
+        <div class="param-row">
+          <label>Organic Rank > <em>Thực tế chưa lên top</em></label>
+          <input class="param-input" type="number" id="p_hp_org" min="1" max="500" step="1" oninput="markDirty()">
+        </div>
+        <div class="param-row">
+          <label>APS (Ad Pressure) < <em>Thị trường quảng cáo chưa đỏ</em></label>
+          <input class="param-input" type="number" id="p_hp_aps" min="0" max="1" step="0.01" oninput="markDirty()">
+        </div>
+      </div>
+
+      <div class="admin-group">
+        <div class="admin-group-title"><span class="lbl lbl-tw">THE WALL</span></div>
+        <div class="param-row">
+          <label>APR > <em>Chuyển đổi tốt nhưng bị brand chiếm</em></label>
+          <input class="param-input" type="number" id="p_tw_apr" min="0" max="10" step="0.01" oninput="markDirty()">
+        </div>
+        <div class="param-row">
+          <label>Top-3 Click Share > <em>Tỉ lệ click tập trung vào Top 3</em></label>
+          <input class="param-input" type="number" id="p_tw_top3" min="0" max="100" step="1" oninput="markDirty()">
+          <span class="param-unit">%</span>
+        </div>
+      </div>
+
+      <div class="admin-group">
+        <div class="admin-group-title"><span class="lbl lbl-lb">LEAKY BUCKET</span></div>
+        <div class="param-row">
+          <label>Organic Rank ≤ <em>Đang có rank nhưng không convert</em></label>
+          <input class="param-input" type="number" id="p_lb_rank" min="1" max="100" step="1" oninput="markDirty()">
+        </div>
+        <div class="param-row">
+          <label>APR < <em>Chuyển đổi quá thấp</em></label>
+          <input class="param-input" type="number" id="p_lb_apr" min="0" max="5" step="0.01" oninput="markDirty()">
+        </div>
+      </div>
+
+      <div class="admin-group">
+        <div class="admin-group-title"><span class="lbl lbl-qw">QUICK WINS</span></div>
+        <div class="param-row">
+          <label>Title Density < <em>Từ khóa chưa bão hòa trong title</em></label>
+          <input class="param-input" type="number" id="p_qw_density" min="1" max="50" step="1" oninput="markDirty()">
+        </div>
+        <div class="param-row">
+          <label>Search Volume > <em>Đủ traffic để làm</em></label>
+          <input class="param-input" type="number" id="p_qw_sv" min="0" max="100000" step="100" oninput="markDirty()">
+        </div>
+      </div>
+
+      <div class="admin-group">
+        <div class="admin-group-title"><span class="lbl lbl-zb">ZOMBIE</span></div>
+        <div class="param-row">
+          <label>Search Volume < <em>Traffic quá thấp</em></label>
+          <input class="param-input" type="number" id="p_zm_sv" min="0" max="10000" step="50" oninput="markDirty()">
+        </div>
+        <div class="param-row">
+          <label>Rec. Rank > <em>Amazon không recommend</em></label>
+          <input class="param-input" type="number" id="p_zm_rec" min="0" max="1000" step="10" oninput="markDirty()">
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: ANTI-BIAS ── -->
+    <div id="apane-antibias" class="hidden">
+      <div class="admin-group">
+        <div class="admin-group-title">🧱 ABA Bias → Force THE WALL</div>
+        <p style="font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.5">Nếu APR cao nhưng Top-3 đang chiếm quá nhiều click → re-classify sang THE WALL dù logic gốc nói khác.</p>
+        <div class="param-row">
+          <label>APR > <em>Ngưỡng APR để kích hoạt kiểm tra</em></label>
+          <input class="param-input" type="number" id="p_ab_apr" min="0" max="10" step="0.01" oninput="markDirty()">
+        </div>
+        <div class="param-row">
+          <label>AND Top-3 Click Share > <em>Tập trung quá cao vào 3 brand đầu</em></label>
+          <input class="param-input" type="number" id="p_ab_top3" min="0" max="100" step="1" oninput="markDirty()">
+          <span class="param-unit">%</span>
+        </div>
+      </div>
+
+      <div class="admin-group">
+        <div class="admin-group-title">🔥 High Burn Risk Flag</div>
+        <p style="font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.5">Gắn cờ "HIGH BURN" nếu Sugg. Bid vượt ngưỡng tuyệt đối hoặc gấp X lần trung bình toàn file.</p>
+        <div class="param-row">
+          <label>Bid > $<em>Ngưỡng tuyệt đối (USD)</em></label>
+          <input class="param-input" type="number" id="p_ab_burn_usd" min="0" max="20" step="0.1" oninput="markDirty()">
+        </div>
+        <div class="param-row">
+          <label>OR Bid > avg × <em>Bội số so với trung bình</em></label>
+          <input class="param-input" type="number" id="p_ab_burn_mult" min="1" max="10" step="0.1" oninput="markDirty()">
+          <span class="param-unit">×</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: PPC DEFAULTS ── -->
+    <div id="apane-ppcdef" class="hidden">
+      <div class="admin-group">
+        <div class="admin-group-title">📊 Calculation Defaults</div>
+        <div class="param-row">
+          <label>CTR giả định <em>Dùng tính Est. Monthly Cost</em></label>
+          <input class="param-input" type="number" id="p_ppc_ctr" min="0.1" max="20" step="0.1" oninput="markDirty()">
+          <span class="param-unit">%</span>
+        </div>
+        <div class="param-row">
+          <label>Quick Wins default bid <em>Bid thấp cho SEO momentum</em></label>
+          <input class="param-input" type="number" id="p_qw_bid" min="0.01" max="5" step="0.01" oninput="markDirty()">
+          <span class="param-unit">$</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: REALITY (Module 2) ── -->
+    <div id="apane-reality" class="hidden">
+      <div class="admin-group">
+        <div class="admin-group-title">🎯 Module 2 · Reality Matrix Thresholds</div>
+        <div class="param-row">
+          <label>VERIFIED STAR: Org Rank ≤ <em>Cần rank ≤ X + SQP Purchases > 0</em></label>
+          <input class="param-input" type="number" id="p_vs_rank" min="1" max="50" step="1" oninput="markDirty()">
+        </div>
+        <div class="param-row">
+          <label>GHOST TARGET: Rec Rank &lt; <em>Amazon gợi ý nhưng SQP Impressions = 0</em></label>
+          <input class="param-input" type="number" id="p_gt_rec" min="1" max="30" step="1" oninput="markDirty()">
+        </div>
+        <div class="param-row">
+          <label>LEAKY BUCKET V2: SQP Clicks > <em>Nhiều click nhưng 0 đơn → Lỗi listing</em></label>
+          <input class="param-input" type="number" id="p_lb2_clicks" min="1" max="500" step="10" oninput="markDirty()">
+        </div>
+        <div class="param-row">
+          <label>UNDERVALUED ALPHA: Org Rank > <em>Rank kém nhưng PR > thị trường</em></label>
+          <input class="param-input" type="number" id="p_ua_rank" min="10" max="200" step="5" oninput="markDirty()">
+        </div>
+      </div>
+
+      <div class="admin-group">
+        <div class="admin-group-title">🚫 Brand Exclusion List (COMPETITOR TRAP)</div>
+        <p style="font-size:11px;color:var(--muted);margin-bottom:10px;line-height:1.5">
+          Mỗi dòng = 1 brand/competitor term. Keyword chứa từ này mà SQP Purchases = 0 → <span class="lbl lbl-ct">COMPETITOR TRAP</span>
+        </p>
+        <textarea id="p_brand_excl" rows="6" oninput="markDirty()"
+          style="width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text2);
+                 padding:8px;border-radius:6px;font-size:12px;resize:vertical;font-family:monospace"
+          placeholder="gorilla&#10;3m&#10;scotch&#10;duck brand"></textarea>
+        <p style="font-size:10px;color:#3a5070;margin-top:5px">★ Không phân biệt hoa/thường · Kiểm tra substring trong keyword</p>
+      </div>
+    </div>
+
+    <div class="params-dirty-note" id="dirty-note">⚠️ Có thay đổi chưa lưu — nhấn Save để re-analyze.</div>
+  </div>
+
+  <div class="admin-ftr">
+    <button class="btn-save-params" onclick="saveAndReanalyze()">💾 Save &amp; Re-analyze</button>
+    <button class="btn-reset-params" onclick="resetToDefaults()">↺ Reset</button>
+  </div>
+</div>
+
+<!-- ═══════════════ MAIN CONTAINER ═══════════════ -->
+<div class="container">
+
+  <!-- STEP 1: UPLOAD -->
+  <div id="step-upload">
+    <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-in').click()">
+      <div class="upload-icon">📊</div>
+      <h2>Upload Helium 10 Cerebro Export</h2>
+      <p>Drag &amp; drop file <strong>.xlsx</strong> vào đây, hoặc click để chọn</p>
+      <p style="margin-top:5px">Toàn bộ xử lý chạy local trong trình duyệt — không upload dữ liệu lên server</p>
+      <span class="pill">📁 .xlsx · .xls</span>
+    </div>
+    <input type="file" id="file-in" accept=".xlsx,.xls" style="display:none">
+  </div>
+
+  <!-- STEP 2: MAPPING -->
+  <div id="step-mapping" class="hidden">
+    <div class="panel">
+      <div class="panel-title">⚙️ Column Mapping</div>
+      <div class="panel-subtitle" id="map-subtitle">Một số cột không nhận diện được. Vui lòng map thủ công trước khi xử lý.</div>
+      <div class="mapping-grid" id="map-grid"></div>
+      <div class="gap8 mt16">
+        <button class="btn btn-primary" onclick="confirmMapping()">✓ Confirm &amp; Run Analysis</button>
+        <button class="btn btn-outline"  onclick="resetAll()">↩ Upload lại</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: RESULTS -->
+  <div id="step-results" class="hidden">
+
+    <!-- ── SQP REALITY CHECK BANNER (Module 1) ── -->
+    <div class="sqp-banner">
+      <div class="sqp-banner-left">
+        <span class="sqp-banner-icon">🛰️</span>
+        <div>
+          <div class="sqp-banner-title">
+            Module 1 · SQP Reality Check
+            <span class="sqp-new-badge">NEW v2.0</span>
+          </div>
+          <div class="sqp-banner-sub">Upload Amazon Search Query Performance CSV để xác thực Cerebro &amp; tính SOG</div>
+        </div>
+      </div>
+      <div class="sqp-banner-right">
+        <div id="sqp-drop-zone" class="sqp-drop" onclick="document.getElementById('sqp-file-in').click()">
+          📂 Upload SQP CSV
+        </div>
+        <input type="file" id="sqp-file-in" accept=".csv" style="display:none">
+        <div id="sqp-loaded-row" class="sqp-loaded-row hidden">
+          <span id="sqp-matched-lbl" class="sqp-matched-lbl"></span>
+          <button class="sqp-clear-btn" onclick="clearSQP()">✕ Xóa</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SQP KPI STRIP (hiện khi đã load SQP) ── -->
+    <div id="sqp-kpi-strip" class="sqp-kpi-strip hidden"></div>
+
+    <!-- ── BUDGET FORECASTER WIDGET (Module 3) ── -->
+    <div id="budget-forecaster" class="budget-forecaster hidden">
+      <div class="bf-header">
+        <div>
+          <div class="bf-title">💰 M3 · PPC Budget Forecaster</div>
+          <div class="bf-sub">Smart bidding theo label · Recommended Daily Budget = Σ(Target Bid × 10 clicks) cho VS + UA</div>
+        </div>
+      </div>
+      <div class="bf-price-row">
+        <label>💲 ASIN Selling Price:</label>
+        <input class="bf-price-input" type="number" id="asin-price" value="0" min="0" step="0.01" placeholder="e.g. 29.99" oninput="renderBudgetForecaster()">
+        <span style="font-size:11px;color:var(--muted)">→ Est. Sales Gap ($) = SOG × Price</span>
+      </div>
+      <div class="bf-grid" id="bf-grid"></div>
+      <div class="bf-kw-list" id="bf-kw-list"></div>
+    </div>
+
+    <div class="sec-hdr">
+      <span class="sec-title">📈 Analysis Results</span>
+      <div class="gap8">
+        <button class="btn btn-outline" onclick="resetAll()">↩ Upload mới</button>
+      </div>
+    </div>
+
+    <div class="stats-grid" id="stats-grid"></div>
+
+    <div class="chart-row">
+      <div class="chart-panel">
+        <h3>Distribution</h3>
+        <div class="chart-container"><canvas id="donut-chart"></canvas></div>
+        <div class="donut-legend" id="donut-legend"></div>
+      </div>
+      <div>
+        <div class="sec-title" style="margin-bottom:9px">🗂️ Strategic Labels — click để filter</div>
+        <div class="cat-grid" id="cat-grid"></div>
+      </div>
+    </div>
+
+    <div id="alerts-box"></div>
+
+    <div class="export-bar">
+      <div class="meta">Showing <strong id="showing">0</strong> / <strong id="total">0</strong> keywords</div>
+      <div class="gap8">
+        <button class="btn btn-success" onclick="exportExcel()">⬇️ Download Processed_Matrix.xlsx</button>
+      </div>
+    </div>
+
+    <div class="tbl-container">
+      <div class="toolbar">
+        <select id="filter-label" onchange="applyFilters()">
+          <option value="">All Labels</option>
+          <optgroup label="── Module 2 (SQP-Verified) ──">
+            <option value="VERIFIED STAR">⭐ Verified Star</option>
+            <option value="GHOST TARGET">👻 Ghost Target</option>
+            <option value="UNDERVALUED ALPHA">💎 Undervalued Alpha</option>
+            <option value="LEAKY BUCKET V2">🔴 Leaky Bucket V2</option>
+            <option value="COMPETITOR TRAP">🚫 Competitor Trap</option>
+          </optgroup>
+          <optgroup label="── Classic (Cerebro) ──">
+            <option value="CASH COW">💰 Cash Cow</option>
+            <option value="HIDDEN POTENTIAL">🔵 Hidden Potential</option>
+            <option value="THE WALL">🧱 The Wall</option>
+            <option value="LEAKY BUCKET">🪣 Leaky Bucket</option>
+            <option value="QUICK WINS">⚡ Quick Wins</option>
+            <option value="ZOMBIE">🧟 Zombie</option>
+          </optgroup>
+        </select>
+        <input type="text" id="filter-kw" placeholder="🔍 Filter keyword…" oninput="applyFilters()">
+        <select id="sort-by" onchange="applyFilters()">
+          <option value="">Default Order</option>
+          <option value="sv_desc">Search Volume ↓</option>
+          <option value="apr_desc">APR ↓</option>
+          <option value="pes_desc">PES ↓</option>
+          <option value="sog_desc">SOG ↓ (SQP)</option>
+          <option value="pesv2_desc">PES V2 ↓ (SQP)</option>
+          <option value="targetbid_desc">Target Bid ↓ (M3)</option>
+          <option value="orgrank_asc">Org Rank ↑</option>
+          <option value="bid_asc">Bid ↑</option>
+          <option value="cost_desc">Est. Cost ↓</option>
+        </select>
+        <select id="filter-burn" onchange="applyFilters()">
+          <option value="">All Risk</option>
+          <option value="burn">⚠️ High Burn Only</option>
+        </select>
+        <span class="showing-info" id="showing-info"></span>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:32px">#</th>
+              <th>Keyword</th>
+              <th class="num" data-tip="Monthly Search Volume">SV</th>
+              <th class="num" data-tip="Organic Rank">Org</th>
+              <th class="num" data-tip="Amazon Rec. Rank">Rec</th>
+              <th class="num" data-tip="APR = Conv/Click Share">APR</th>
+              <th class="num" data-tip="APS = Sponsored/Competing">APS</th>
+              <th class="num" data-tip="PES v1 = SV×APR/Bid (Cerebro)">PES</th>
+              <th class="num sqp-th" data-tip="PES V2 = SV×(SQP_PurchRate/100)/Bid — Dùng First-party data, chính xác hơn">PES★</th>
+              <th class="num" data-tip="H10 Suggested Bid">Bid</th>
+              <th class="num" data-tip="Module 3 Smart Bid: VS=MaxBid · UA=Bid×110% · CC=MinBid · QW=$0.35–0.50 · Ghost/LB/CT=$0.00 · Others=SuggestedBid">Target Bid</th>
+              <th class="num" data-tip="SV×CTR×Bid/month">$/mo</th>
+              <th>Label</th>
+              <th style="min-width:270px">Action Plan</th>
+              <th class="num" data-tip="Bid × 10 clicks">Daily$</th>
+            </tr>
+          </thead>
+          <tbody id="tbl-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══════════════ PPC INTEGRATION ═══════════════ -->
+    <div class="ppc-section">
+      <div class="ppc-section-hdr" onclick="togglePPCSection()">
+        <div>
+          <h3>📋 Process to PPC Campaign</h3>
+          <p>Tự động fill từ khóa + bid vào file Amazon_PPC_Input.xlsx theo kết quả phân tích</p>
+        </div>
+        <span class="ppc-toggle" id="ppc-toggle">▼</span>
+      </div>
+
+      <div class="ppc-section-body" id="ppc-body" style="display:none">
+
+        <!-- Step 1: Upload template -->
+        <div class="ppc-step">
+          <div class="ppc-step-num">1</div>
+          <div class="ppc-step-content">
+            <div class="ppc-step-title">Upload PPC Input Template</div>
+            <div class="ppc-upload-mini" onclick="document.getElementById('ppc-file-in').click()" id="ppc-drop">
+              <p id="ppc-upload-txt">📄 Click để chọn file <strong>Amazon_PPC_Input.xlsx</strong></p>
+            </div>
+            <input type="file" id="ppc-file-in" accept=".xlsx,.xls" style="display:none">
+          </div>
+        </div>
+
+        <!-- Step 2: Configure -->
+        <div class="ppc-step" id="ppc-cfg-section" style="display:none">
+          <div class="ppc-step-num">2</div>
+          <div class="ppc-step-content" style="width:100%">
+            <div class="ppc-step-title">Cấu hình Campaign</div>
+
+            <div class="ppc-cfg-grid">
+              <div class="ppc-field">
+                <label>Campaign Name Prefix</label>
+                <input type="text" id="cfg_prefix" placeholder="Vd: MyProduct hoặc PleaseBe" oninput="updatePPCPreview()">
+              </div>
+              <div class="ppc-field">
+                <label>SKU (Product Ads)</label>
+                <input type="text" id="cfg_sku" placeholder="Vd: FBA004" oninput="updatePPCPreview()">
+              </div>
+              <div class="ppc-field">
+                <label>Bidding Strategy</label>
+                <select id="cfg_bidding">
+                  <option value="Fixed bid">Fixed bid</option>
+                  <option value="Dynamic bids - down only">Dynamic bids - down only</option>
+                  <option value="Dynamic bids - up and down">Dynamic bids - up and down</option>
+                </select>
+              </div>
+              <div class="ppc-field">
+                <label>Portfolio Name (tùy chọn)</label>
+                <input type="text" id="cfg_portfolio" placeholder="Để trống nếu không dùng">
+              </div>
+              <div class="ppc-field">
+                <label>State</label>
+                <select id="cfg_state">
+                  <option value="enabled">enabled</option>
+                  <option value="paused">paused</option>
+                </select>
+              </div>
+              <div class="ppc-field">
+                <label>Include Date in Campaign Name</label>
+                <select id="cfg_use_date" onchange="updatePPCPreview()">
+                  <option value="1">Có — {prefix}_{DDMMYYYY}_{keyword}</option>
+                  <option value="0">Không — {prefix}_{keyword}</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Per-label settings -->
+            <div class="ppc-step-title" style="margin-bottom:8px">⚙️ Cài đặt theo từng Label</div>
+            <table class="ppc-label-table" id="ppc-label-table">
+              <thead>
+                <tr>
+                  <th style="width:28px"></th>
+                  <th>Label</th>
+                  <th>Include</th>
+                  <th>Bid Source</th>
+                  <th>Custom Bid ($)</th>
+                  <th>Match Type</th>
+                  <th>Daily Budget ($)</th>
+                </tr>
+              </thead>
+              <tbody id="ppc-label-tbody"></tbody>
+            </table>
+
+            <!-- Preview -->
+            <div class="ppc-step-title" style="margin-bottom:8px">📊 Preview</div>
+            <div class="ppc-preview" id="ppc-preview"></div>
+
+            <!-- Actions -->
+            <div class="ppc-actions">
+              <button class="btn-ppc" id="btn-process-ppc" onclick="processToPPC()">
+                🚀 Generate &amp; Save PPC File
+              </button>
+              <span class="ppc-save-note">💡 Trình duyệt sẽ mở hộp thoại "Save As" để bạn chọn thư mục lưu file</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+    <!-- /PPC INTEGRATION -->
+
+  </div><!-- /step-results -->
+
+</div><!-- /container -->
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// PARAMETER DEFAULTS + PERSISTENCE
+// ═══════════════════════════════════════════════════════════════
+const PARAM_DEFAULTS = {
+  cc_rank:    15,    cc_apr:    1.00,
+  hp_rec:     10,    hp_org:    50,    hp_aps:   0.10,
+  tw_apr:     1.10,  tw_top3:   60,
+  lb_rank:    20,    lb_apr:    0.80,
+  qw_density: 5,     qw_sv:     1000,
+  zm_sv:      500,   zm_rec:    100,
+  ab_apr:     1.00,  ab_top3:   70,    ab_burn_usd: 2.00, ab_burn_mult: 2.0,
+  ppc_ctr:    2,     ppc_qw_bid:0.30,
+  // ── Module 2 thresholds ──
+  vs_rank:    15,    // VERIFIED STAR: Org Rank ≤ X
+  gt_rec:     10,    // GHOST TARGET: Rec Rank < X
+  lb2_clicks: 50,    // LEAKY BUCKET V2: SQP Clicks > X
+  ua_rank:    50,    // UNDERVALUED ALPHA: Org Rank > X
+};
+
+// Brand Exclusion List — lưu/load riêng
+let brandExclusionList = loadBrandExcl();
+function loadBrandExcl(){
+  try{
+    const s=localStorage.getItem('amz_kw_brand_excl');
+    return s?JSON.parse(s):[];
+  }catch{return[];}
+}
+function saveBrandExcl(arr){ localStorage.setItem('amz_kw_brand_excl',JSON.stringify(arr)); }
+let P = loadP();
+
+function loadP() {
+  try { const s=localStorage.getItem('amz_kw_P'); return s ? {...PARAM_DEFAULTS,...JSON.parse(s)} : {...PARAM_DEFAULTS}; }
+  catch { return {...PARAM_DEFAULTS}; }
+}
+function saveP() { localStorage.setItem('amz_kw_P', JSON.stringify(P)); }
+
+// PPC CONFIG DEFAULTS
+const PPC_DEFAULTS = {
+  include: {
+    // ── Module 2 (SQP-verified) ──
+    'VERIFIED STAR':true, 'UNDERVALUED ALPHA':true,
+    'GHOST TARGET':false,  'LEAKY BUCKET V2':false, 'COMPETITOR TRAP':false,
+    // ── Classic ──
+    'CASH COW':true,'HIDDEN POTENTIAL':true,'THE WALL':false,'LEAKY BUCKET':false,'QUICK WINS':true,'ZOMBIE':false,
+  },
+  bidSrc:  {
+    // ── Module 2 ──
+    'VERIFIED STAR':'max',       // Max Bid — SQP confirmed, defend market share
+    'UNDERVALUED ALPHA':'suggested', // Suggested — build rank gradually
+    'GHOST TARGET':'suggested',  'LEAKY BUCKET V2':'suggested', 'COMPETITOR TRAP':'suggested',
+    // ── Classic ──
+    'CASH COW':'min','HIDDEN POTENTIAL':'max','THE WALL':'suggested','LEAKY BUCKET':'suggested','QUICK WINS':'custom','ZOMBIE':'suggested',
+  },
+  custBid: {
+    'VERIFIED STAR':0,'UNDERVALUED ALPHA':0,'GHOST TARGET':0,'LEAKY BUCKET V2':0,'COMPETITOR TRAP':0,
+    'CASH COW':0,'HIDDEN POTENTIAL':0,'THE WALL':0,'LEAKY BUCKET':0,'QUICK WINS':0.30,'ZOMBIE':0,
+  },
+  match:   {
+    'VERIFIED STAR':'exact','UNDERVALUED ALPHA':'exact','GHOST TARGET':'exact','LEAKY BUCKET V2':'exact','COMPETITOR TRAP':'exact',
+    'CASH COW':'exact','HIDDEN POTENTIAL':'exact','THE WALL':'exact','LEAKY BUCKET':'exact','QUICK WINS':'broad','ZOMBIE':'exact',
+  },
+  budget:  {
+    'VERIFIED STAR':10,'UNDERVALUED ALPHA':5,'GHOST TARGET':2,'LEAKY BUCKET V2':2,'COMPETITOR TRAP':2,
+    'CASH COW':2,'HIDDEN POTENTIAL':5,'THE WALL':2,'LEAKY BUCKET':2,'QUICK WINS':2,'ZOMBIE':2,
+  },
+};
+let ppcCfg = loadPPCCfg();
+function loadPPCCfg() {
+  try { const s=localStorage.getItem('amz_kw_ppc'); return s ? {...PPC_DEFAULTS,...JSON.parse(s)} : JSON.parse(JSON.stringify(PPC_DEFAULTS)); }
+  catch { return JSON.parse(JSON.stringify(PPC_DEFAULTS)); }
+}
+function savePPCCfg() { localStorage.setItem('amz_kw_ppc', JSON.stringify(ppcCfg)); }
+
+// ═══════════════════════════════════════════════════════════════
+// APP STATE
+// ═══════════════════════════════════════════════════════════════
+let S = {
+  headers:[], rawRows:[], colMap:{},
+  processed:[], filtered:[],
+  donutChart:null,
+  ppcTemplate:null,
+  // ── SQP Module 1 ──
+  sqpMap:{},          // normalized keyword → sqp row object
+  sqpLoaded:false,
+  sqpMarketAvgPR:0,   // avg Purchase Rate % toàn SQP (dùng cho Module 2 UNDERVALUED)
+};
+
+// ═══════════════════════════════════════════════════════════════
+// ADMIN PANEL
+// ═══════════════════════════════════════════════════════════════
+function openAdmin() {
+  renderAdminInputs();
+  document.getElementById('admin-panel').classList.add('open');
+  document.getElementById('admin-overlay').classList.add('open');
+}
+function closeAdmin() {
+  document.getElementById('admin-panel').classList.remove('open');
+  document.getElementById('admin-overlay').classList.remove('open');
+}
+function switchATab(t) {
+  ['matrix','antibias','reality','ppcdef'].forEach(k => {
+    document.getElementById('atab-'+k).classList.toggle('active', k===t);
+    document.getElementById('apane-'+k).classList.toggle('hidden', k!==t);
+  });
+}
+function renderAdminInputs() {
+  const map = {
+    p_cc_rank:P.cc_rank,    p_cc_apr:P.cc_apr,
+    p_hp_rec:P.hp_rec,      p_hp_org:P.hp_org,       p_hp_aps:P.hp_aps,
+    p_tw_apr:P.tw_apr,      p_tw_top3:P.tw_top3,
+    p_lb_rank:P.lb_rank,    p_lb_apr:P.lb_apr,
+    p_qw_density:P.qw_density, p_qw_sv:P.qw_sv,
+    p_zm_sv:P.zm_sv,        p_zm_rec:P.zm_rec,
+    p_ab_apr:P.ab_apr,      p_ab_top3:P.ab_top3,
+    p_ab_burn_usd:P.ab_burn_usd, p_ab_burn_mult:P.ab_burn_mult,
+    p_ppc_ctr:P.ppc_ctr,    p_qw_bid:P.ppc_qw_bid,
+    // Module 2
+    p_vs_rank:P.vs_rank,    p_gt_rec:P.gt_rec,
+    p_lb2_clicks:P.lb2_clicks, p_ua_rank:P.ua_rank,
+  };
+  for (const [id, val] of Object.entries(map)) {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  }
+  // Brand exclusion textarea
+  const ta=document.getElementById('p_brand_excl');
+  if(ta) ta.value=brandExclusionList.join('\n');
+  document.getElementById('dirty-note').style.display = 'none';
+}
+function markDirty() { document.getElementById('dirty-note').style.display = 'block'; }
+function saveAndReanalyze() {
+  P.cc_rank    = +v('p_cc_rank');    P.cc_apr     = +v('p_cc_apr');
+  P.hp_rec     = +v('p_hp_rec');     P.hp_org     = +v('p_hp_org');     P.hp_aps     = +v('p_hp_aps');
+  P.tw_apr     = +v('p_tw_apr');     P.tw_top3    = +v('p_tw_top3');
+  P.lb_rank    = +v('p_lb_rank');    P.lb_apr     = +v('p_lb_apr');
+  P.qw_density = +v('p_qw_density'); P.qw_sv      = +v('p_qw_sv');
+  P.zm_sv      = +v('p_zm_sv');      P.zm_rec     = +v('p_zm_rec');
+  P.ab_apr     = +v('p_ab_apr');     P.ab_top3    = +v('p_ab_top3');
+  P.ab_burn_usd= +v('p_ab_burn_usd');P.ab_burn_mult=+v('p_ab_burn_mult');
+  P.ppc_ctr    = +v('p_ppc_ctr');    P.ppc_qw_bid = +v('p_qw_bid');
+  // Module 2 params
+  P.vs_rank    = +v('p_vs_rank');    P.gt_rec     = +v('p_gt_rec');
+  P.lb2_clicks = +v('p_lb2_clicks'); P.ua_rank    = +v('p_ua_rank');
+  saveP();
+  // Save brand exclusion list
+  const ta=document.getElementById('p_brand_excl');
+  if(ta){
+    brandExclusionList=ta.value.split('\n')
+      .map(s=>s.trim().toLowerCase()).filter(s=>s.length>0);
+    saveBrandExcl(brandExclusionList);
+  }
+  document.getElementById('dirty-note').style.display = 'none';
+  if (S.rawRows.length) { runAnalysis(); closeAdmin(); }
+  else closeAdmin();
+}
+function resetToDefaults() {
+  P = {...PARAM_DEFAULTS};
+  brandExclusionList=[];
+  saveBrandExcl([]);
+  saveP();
+  renderAdminInputs();
+  if (S.rawRows.length) runAnalysis();
+}
+function v(id) { return document.getElementById(id)?.value ?? 0; }
+
+// ═══════════════════════════════════════════════════════════════
+// COLUMN DEFINITIONS
+// ═══════════════════════════════════════════════════════════════
+const COL_DEFS = {
+  keyword:      { label:'Keyword Phrase',        req:true,  aliases:['keyword phrase','keyword','keywords','search term','key phrase'] },
+  sv:           { label:'Search Volume',         req:true,  aliases:['search volume','search vol','monthly search volume','sv'] },
+  orgRank:      { label:'Organic Rank',          req:true,  aliases:['organic rank','org rank','organic ranking','organic position'] },
+  recRank:      { label:'Amazon Rec. Rank',      req:false, aliases:['amazon rec. rank','amazon recommended rank','amazon rec rank','recommended rank','amazon suggestion rank','amazon suggested rank'] },
+  clickShare:   { label:'ABA Total Click Share', req:false, aliases:['aba total click share','total click share','aba click share','click share'] },
+  convShare:    { label:'ABA Total Conv. Share', req:false, aliases:['aba total conv. share','aba total conv share','total conv. share','total conversion share','aba conv share','conversion share'] },
+  competing:    { label:'Competing Products',    req:false, aliases:['competing products','competitors','# competitors','number of competitors'] },
+  sponsored:    { label:'Sponsored ASINs',       req:false, aliases:['sponsored asins','# of sponsored asins','num sponsored','sponsored products','# sponsored asins'] },
+  titleDensity: { label:'Title Density',         req:false, aliases:['title density'] },
+  bid:          { label:'H10 PPC Sugg. Bid',     req:true,  aliases:['h10 ppc sugg. bid','ppc sugg. bid','suggested bid','h10 ppc bid','ppc bid','suggested ppc bid'] },
+  minBid:       { label:'H10 PPC Min Bid',       req:false, aliases:['h10 ppc sugg. min bid','ppc sugg. min bid','min bid','suggested min bid','h10 min bid'] },
+  maxBid:       { label:'H10 PPC Max Bid',       req:false, aliases:['h10 ppc sugg. max bid','ppc sugg. max bid','max bid','suggested max bid','h10 max bid'] },
+  top3:         { label:'Top 3 Click Share',     req:false, aliases:['top 3 click share','top3 click share','top 3 competitors click share','top 3 products click share'] },
+};
+
+// ═══════════════════════════════════════════════════════════════
+// FILE HANDLING
+// ═══════════════════════════════════════════════════════════════
+const dropZone = document.getElementById('drop-zone');
+dropZone.addEventListener('dragover',  e=>{e.preventDefault();dropZone.classList.add('drag-over');});
+dropZone.addEventListener('dragleave', ()=>dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e=>{e.preventDefault();dropZone.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f)readMainFile(f);});
+document.getElementById('file-in').addEventListener('change', e=>{if(e.target.files[0])readMainFile(e.target.files[0]);});
+
+function readMainFile(file) {
+  new FileReader().then;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const wb = XLSX.read(ev.target.result, {type:'binary'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const arr = XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      if (arr.length<2){alert('File trống hoặc không có dữ liệu.');return;}
+      S.headers = arr[0].map(h=>String(h??''));
+      S.rawRows = arr.slice(1).filter(r=>r.some(c=>c!==''&&c!==null&&c!==undefined));
+      autoMap();
+    } catch(e){alert('Lỗi đọc file: '+e.message);}
+  };
+  reader.readAsBinaryString(file);
+}
+
+function norm(s){return String(s).toLowerCase().replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();}
+
+function autoMap() {
+  S.colMap = {};
+  for (const [key,def] of Object.entries(COL_DEFS)) {
+    let best=-1, bestScore=0;
+    S.headers.forEach((h,i)=>{
+      const hn=norm(h);
+      for (const alias of def.aliases) {
+        const an=norm(alias);
+        let sc = hn===an?10 : (hn.includes(an)||an.includes(hn))?6 : 0;
+        if (!sc){const ht=new Set(hn.split(' '));const at=an.split(' ');const ov=at.filter(t=>ht.has(t)).length;sc=(ov/Math.max(at.length,1))*5;}
+        if (sc>bestScore){bestScore=sc;best=i;}
+      }
+    });
+    if (best>=0) S.colMap[key]=best;
+  }
+  const reqMiss = Object.entries(COL_DEFS).filter(([k,d])=>d.req&&!(k in S.colMap));
+  const optMiss = Object.entries(COL_DEFS).filter(([k,d])=>!d.req&&!(k in S.colMap)).length;
+  if (reqMiss.length>0||optMiss>=4) showMappingUI(reqMiss.length>0);
+  else runAnalysis();
+}
+
+function showMappingUI(hasCrit) {
+  hide('step-upload'); show('step-mapping');
+  document.getElementById('map-subtitle').textContent = hasCrit
+    ? 'Thiếu cột bắt buộc. Vui lòng map thủ công.'
+    : 'Auto-detect xong. Kiểm tra lại các trường optional.';
+  const grid=document.getElementById('map-grid'); grid.innerHTML='';
+  for (const [key,def] of Object.entries(COL_DEFS)) {
+    const matched = key in S.colMap;
+    const div=document.createElement('div'); div.className='map-item';
+    const opts=['<option value="">— Not in file —</option>',...S.headers.map((h,i)=>`<option value="${i}"${S.colMap[key]===i?' selected':''}>${h}</option>`)].join('');
+    div.innerHTML=`<label>${def.label}${def.req?'<span class="req"> *</span>':''}</label>
+      <select class="${matched?'ok':'bad'}" data-key="${key}" onchange="updateMap(this)">${opts}</select>
+      <div class="match-hint ${matched?'ok':'bad'}">${matched?'✓ '+S.headers[S.colMap[key]]:'✗ Not mapped'}</div>`;
+    grid.appendChild(div);
+  }
+}
+function updateMap(sel) {
+  const key=sel.dataset.key;
+  if(sel.value===''){delete S.colMap[key];sel.className='bad';sel.nextElementSibling.textContent='✗ Not mapped';sel.nextElementSibling.className='match-hint bad';}
+  else{S.colMap[key]=parseInt(sel.value);sel.className='ok';sel.nextElementSibling.textContent='✓ '+S.headers[parseInt(sel.value)];sel.nextElementSibling.className='match-hint ok';}
+}
+function confirmMapping(){
+  const miss=Object.entries(COL_DEFS).filter(([k,d])=>d.req&&!(k in S.colMap)).map(([,d])=>d.label);
+  if(miss.length){alert('Cần map:\n• '+miss.join('\n• '));return;}
+  hide('step-mapping'); runAnalysis();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SQP MODULE 1 — DATA INTEGRATION & REALITY CHECK
+// ═══════════════════════════════════════════════════════════════
+
+// Normalize keyword cho merge: lowercase, trim, collapse spaces
+function normKw(s) { return String(s).toLowerCase().trim().replace(/\s+/g,' '); }
+
+// CSV line parser — xử lý quoted fields đúng chuẩn RFC 4180
+function parseCSVLine(line) {
+  const result=[]; let cur='', inQ=false;
+  for (let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(ch==='"'&&!inQ){inQ=true;}
+    else if(ch==='"'&&inQ){if(line[i+1]==='"'){cur+='"';i++;}else inQ=false;}
+    else if(ch===','&&!inQ){result.push(cur);cur='';}
+    else cur+=ch;
+  }
+  result.push(cur);
+  return result;
+}
+
+// Đọc file SQP CSV
+function readSQPFile(file) {
+  // Hiện loading state ngay lập tức (trước khi đọc file)
+  const dz=document.getElementById('sqp-drop-zone');
+  dz.innerHTML='⏳ Đang đọc file…';
+  dz.style.cursor='wait';
+
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    // Yield 1 frame để trình duyệt render loading state trước
+    requestAnimationFrame(()=>{
+      dz.innerHTML='⏳ Đang xử lý…';
+      setTimeout(()=>{
+        try{ parseSQPCSV(ev.target.result, file.name); }
+        catch(e){
+          dz.innerHTML='📂 Upload SQP CSV';
+          dz.style.cursor='pointer';
+          alert('Lỗi đọc SQP file: '+e.message);
+        }
+      },50); // 50ms đủ để browser render "Đang xử lý"
+    });
+  };
+  reader.onerror=()=>{
+    dz.innerHTML='📂 Upload SQP CSV';
+    dz.style.cursor='pointer';
+    alert('Không đọc được file. Kiểm tra lại định dạng CSV.');
+  };
+  reader.readAsText(file,'utf-8');
+}
+
+// Parse SQP CSV → S.sqpMap
+function parseSQPCSV(text, filename) {
+  // Xóa BOM nếu có
+  const clean=text.replace(/^﻿/,'');
+  const lines=clean.split('\n').map(l=>l.trimEnd()).filter(l=>l.length>0);
+
+  // Row 0 = metadata (Brand=...), Row 1 = headers, Row 2+ = data
+  if(lines.length<3){ alert('File SQP không đủ dữ liệu (cần ít nhất 3 dòng).'); return; }
+
+  const headers=parseCSVLine(lines[1]).map(h=>h.trim());
+
+  // Tìm index cột "Search Query" (không phải Score, không phải Volume)
+  const sqIdx=headers.findIndex(h=>{
+    const n=h.toLowerCase();
+    return n==='search query';
+  });
+  if(sqIdx===-1){ alert('Không tìm thấy cột "Search Query" trong file SQP. Kiểm tra lại file.'); return; }
+
+  // Build lookup: header name → column index
+  const ci={};
+  headers.forEach((h,i)=>{ ci[h]=i; });
+
+  // Helper: lấy số từ cell — xóa % và whitespace, parse float
+  const getNum=(vals,colName)=>{
+    if(colName===''||ci[colName]===undefined) return null;
+    const v=String(vals[ci[colName]]??'').replace(/%/g,'').trim();
+    const n=parseFloat(v);
+    return isNaN(n)?null:n;
+  };
+
+  S.sqpMap={};
+  let totalPR=0, prCount=0;
+
+  for(let i=2;i<lines.length;i++){
+    const vals=parseCSVLine(lines[i]);
+    const rawKw=String(vals[sqIdx]??'').trim();
+    if(!rawKw) continue;
+    const kw=normKw(rawKw);
+
+    const row={
+      sqVol:          getNum(vals,'Search Query Volume'),
+      impTotal:       getNum(vals,'Impressions: Total Count'),
+      impBrandShare:  getNum(vals,'Impressions: Brand Share %'),
+      clickTotal:     getNum(vals,'Clicks: Total Count'),
+      clickBrandShare:getNum(vals,'Clicks: Brand Share %'),
+      purchTotal:     getNum(vals,'Purchases: Total Count'),    // = Keyword Sales
+      purchRate:      getNum(vals,'Purchases: Purchase Rate %'),
+      purchBrandShare:getNum(vals,'Purchases: Brand Share %'), // % (0-100 range)
+      purchBrandCount:        getNum(vals,'Purchases: Brand Count'),
+      purchBrandPriceMedian:  getNum(vals,'Purchases: Brand Price (Median)'),
+    };
+
+    S.sqpMap[kw]=row;
+
+    if(row.purchRate!==null){ totalPR+=row.purchRate; prCount++; }
+  }
+
+  S.sqpLoaded=true;
+  S.sqpMarketAvgPR=prCount>0?totalPR/prCount:0;
+
+  const count=Object.keys(S.sqpMap).length;
+
+  // Cập nhật UI banner
+  document.getElementById('sqp-drop-zone').innerHTML=
+    `<span style="color:var(--green)">✅ ${esc(filename)}</span>`;
+  document.getElementById('sqp-drop-zone').style.cursor='default';
+  document.getElementById('sqp-loaded-row').classList.remove('hidden');
+  document.getElementById('sqp-matched-lbl').textContent=
+    `${count.toLocaleString()} SQP keywords`;
+
+  // Re-run để merge ngay
+  if(S.rawRows.length) runAnalysis();
+}
+
+// Xóa SQP data
+function clearSQP(){
+  S.sqpMap={}; S.sqpLoaded=false; S.sqpMarketAvgPR=0;
+  document.getElementById('sqp-drop-zone').innerHTML='📂 Upload SQP CSV';
+  document.getElementById('sqp-drop-zone').style.cursor='pointer';
+  document.getElementById('sqp-loaded-row').classList.add('hidden');
+  document.getElementById('sqp-kpi-strip').classList.add('hidden');
+  document.getElementById('sqp-file-in').value='';
+  if(S.rawRows.length) runAnalysis();
+}
+
+// Render SQP KPI strip
+function renderSQPKPIs(){
+  const strip=document.getElementById('sqp-kpi-strip');
+  if(!S.sqpLoaded||!S.processed.length){ strip.classList.add('hidden'); return; }
+
+  const d=S.processed;
+  const matched=d.filter(r=>r.sqpMatched).length;
+  const withSOG=d.filter(r=>r.sog!==null&&r.sog>=0);
+  const totalSOG=withSOG.reduce((s,r)=>s+r.sog,0);
+  const avgSOG=withSOG.length?totalSOG/withSOG.length:0;
+  const topSOG=withSOG.length?Math.max(...withSOG.map(r=>r.sog)):0;
+  const matchRate=d.length?((matched/d.length)*100).toFixed(1):'0';
+
+  strip.classList.remove('hidden');
+  strip.innerHTML=[
+    {val:`${matched}/${d.length}`,  lbl:'SQP Matched',         sub:`${matchRate}% match rate`},
+    {val:Math.round(avgSOG).toLocaleString(), lbl:'Avg SOG',   sub:'★ Mkt Sales × (1−Brand%)'},
+    {val:Math.round(topSOG).toLocaleString(), lbl:'Top SOG',   sub:'Keyword cơ hội lớn nhất'},
+    {val:S.sqpMarketAvgPR.toFixed(2)+'%',     lbl:'Market Avg PR%', sub:'★ First-party SQP data'},
+  ].map(k=>`<div class="sqp-kpi">
+    <div class="sqp-kpi-val">${k.val}</div>
+    <div class="sqp-kpi-lbl">${k.lbl}</div>
+    <div class="sqp-kpi-sub">${k.sub}</div>
+  </div>`).join('');
+}
+
+// Event listener cho SQP file input
+document.getElementById('sqp-file-in').addEventListener('change',e=>{
+  if(e.target.files[0]) readSQPFile(e.target.files[0]);
+});
+
+// ═══════════════════════════════════════════════════════════════
+// ANALYSIS ENGINE (uses P for all thresholds)
+// ═══════════════════════════════════════════════════════════════
+function getV(row,key){
+  const idx=S.colMap[key]; if(idx===undefined)return null;
+  const raw=row[idx]; if(raw===null||raw===undefined||raw==='')return null;
+  if(typeof raw==='number')return raw;
+  if(typeof raw==='string'){const p=raw.includes('%');const n=parseFloat(raw.replace(/[^0-9.\-]/g,''));if(isNaN(n))return null;return p?n/100:n;}
+  return null;
+}
+function sdiv(a,b){if(a===null||b===null||b===0||isNaN(a)||isNaN(b))return null;return a/b;}
+
+const BIGNUM=9999;
+
+// ── v1.1 Classify (Cerebro-only fallback) ──
+function classify(o) {
+  const {orgRank:or,recRank:rr,apr,aps,sv,td,top3} = o;
+  if (or<=P.cc_rank && apr>=P.cc_apr)                                    return 'CASH COW';
+  if (rr<=P.hp_rec  && or>P.hp_org && aps!==null && aps<P.hp_aps)        return 'HIDDEN POTENTIAL';
+  if (apr>P.tw_apr  && top3!==null && top3>P.tw_top3/100)                return 'THE WALL';
+  if (or<=P.lb_rank && apr<P.lb_apr)                                     return 'LEAKY BUCKET';
+  if (td!==null && td<P.qw_density && sv>P.qw_sv)                        return 'QUICK WINS';
+  if (sv<P.zm_sv || rr>P.zm_rec)                                         return 'ZOMBIE';
+  return 'ZOMBIE';
+}
+
+// ── Module 2: SQP-Aware Classify ──
+// Chạy TRƯỚC classify() — ưu tiên cao hơn khi có SQP data
+// Trả về null nếu không match → fall through sang classify()
+function classifyV2(cerebroParams, sqpRow, kwNormalized, marketAvgPR) {
+  const {orgRank:or, recRank:rr} = cerebroParams;
+
+  // 0. COMPETITOR TRAP — không cần SQP, chỉ cần Brand Exclusion List
+  if(brandExclusionList.length>0){
+    const hasBrand=brandExclusionList.some(b=>kwNormalized.includes(b));
+    if(hasBrand){
+      // Trap nếu SQP Purchases = 0 HOẶC không có trong SQP (an toàn hơn)
+      const sqpPurch=sqpRow?.purchTotal??null;
+      if(sqpPurch===null||sqpPurch===0) return 'COMPETITOR TRAP';
+    }
+  }
+
+  // Các nhãn dưới đây yêu cầu SQP data
+  if(!sqpRow) return null; // không có SQP → fall through sang v1.1
+
+  const sqpImp   = sqpRow.impTotal   ??null;
+  const sqpClicks= sqpRow.clickTotal ??null;
+  const sqpPurch = sqpRow.purchTotal ??null;
+  const sqpPR    = sqpRow.purchRate  ??null; // % dạng 0-100
+
+  // 1. GHOST TARGET: Amazon Rec Rank < threshold VÀ SQP Impressions = 0
+  //    → Ảo giác thuật toán: Amazon gợi ý nhưng thực tế khách không thấy sản phẩm
+  if(rr!==null && rr<P.gt_rec && sqpImp!==null && sqpImp===0)
+    return 'GHOST TARGET';
+
+  // 2. VERIFIED STAR: Org Rank ≤ threshold VÀ SQP Purchases > 0
+  //    → Chứng minh từ SQP: keyword này thực sự ra đơn hàng
+  if(or<=P.vs_rank && sqpPurch!==null && sqpPurch>0)
+    return 'VERIFIED STAR';
+
+  // 3. LEAKY BUCKET V2: SQP Clicks > threshold VÀ SQP Purchases = 0
+  //    → Bằng chứng thép: khách click nhiều nhưng không mua → lỗi listing
+  if(sqpClicks!==null && sqpClicks>P.lb2_clicks && sqpPurch!==null && sqpPurch===0)
+    return 'LEAKY BUCKET V2';
+
+  // 4. UNDERVALUED ALPHA: Org Rank > threshold VÀ SQP Purchase Rate > Market Avg
+  //    → Sản phẩm chuyển đổi tốt hơn thị trường nhưng thiếu hiển thị
+  if(or>P.ua_rank && sqpPR!==null && marketAvgPR>0 && sqpPR>marketAvgPR)
+    return 'UNDERVALUED ALPHA';
+
+  return null; // không match Module 2 → dùng v1.1
+}
+
+function antiBias(label,apr,top3,bid,avgBid){
+  const flags=[];
+  if(apr>P.ab_apr && top3!==null && top3>P.ab_top3/100 && label!=='THE WALL')
+    {label='THE WALL';flags.push('ABA_BIAS');}
+  if(bid>P.ab_burn_usd || (avgBid>0&&bid>avgBid*P.ab_burn_mult))
+    flags.push('HIGH_BURN');
+  return{label,flags};
+}
+
+function actionPlan(label,minBid,maxBid,flags){
+  const burn=flags.includes('HIGH_BURN')?' ⚠️ HIGH BURN RISK: kiểm soát daily budget.':'';
+  const min=minBid?`$${minBid.toFixed(2)}`:'Min Bid';
+  const max=maxBid?`$${maxBid.toFixed(2)}`:'Max Bid';
+  const plans={
+    // ── Module 2 labels ──
+    'VERIFIED STAR':    `✅ SQP-Confirmed. Bid = ${max} để chiếm tối đa thị phần. Defend rank hàng ngày — đây là từ khóa đang thực sự ra đơn.${burn}`,
+    'GHOST TARGET':     `👻 Negative Exact ngay. Amazon gợi ý nhưng SQP Impressions = 0 — khách hàng không thấy sản phẩm. Lãng phí ngân sách.${burn}`,
+    'UNDERVALUED ALPHA':`💎 SEO Gap cực lớn. Thêm vào Title/Bullets ngay. Chạy SP Exact bid thấp để build rank — conversion rate đang tốt hơn thị trường.${burn}`,
+    'LEAKY BUCKET V2':  `🔴 SQP: Clicks cao nhưng 0 đơn. Dừng Ads NGAY. Ưu tiên sửa listing (Main Image, Bullets, Price point) trước khi tái chạy.${burn}`,
+    'COMPETITOR TRAP':  `🚫 Brand competitor keyword — SQP Purchases = 0 cho thương hiệu này. Dừng Ads. Nếu muốn giữ: chuyển sang SD ASIN Targeting.`,
+    // ── Classic v1.1 labels ──
+    'CASH COW':         `Defend: Bid = ${min}. Theo dõi Top-${P.cc_rank} hàng ngày. Không tăng bid.${burn}`,
+    'HIDDEN POTENTIAL': `Aggressive: Bid = ${max}. Thêm vào SP Exact Match. Review rank hàng tuần.${burn}`,
+    'THE WALL':         `Không dùng Keyword Ads. Chuyển sang ASIN Targeting (SD) nhắm Top-3 ASIN đối thủ.${burn}`,
+    'LEAKY BUCKET':     `DỪNG Ads. Sửa listing — Title, Bullets, Main Image, A+. Re-evaluate sau 30 ngày.${burn}`,
+    'QUICK WINS':       `Thêm vào Product Title ngay. Chạy SP Exact bid thấp ($${P.ppc_qw_bid.toFixed(2)}) để build rank.${burn}`,
+    'ZOMBIE':           `Xóa khỏi campaign. Chuyển ngân sách sang Verified Star / Hidden Potential.`,
+  };
+  return plans[label]??'Manual review.';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MODULE 3 — SMART BID ENGINE
+// ═══════════════════════════════════════════════════════════════
+
+// calcTargetBid: smart bid per label
+// VERIFIED STAR    → Max Bid (full aggression — SQP-confirmed performer)
+// UNDERVALUED ALPHA → Suggested Bid × 1.10 (10% premium to build rank)
+// CASH COW         → Min Bid (defend cheaply — already ranking)
+// GHOST TARGET / LEAKY BUCKET / LEAKY BUCKET V2 / COMPETITOR TRAP → $0.00 (stop waste)
+// QUICK WINS       → clamp bid to [$0.35, $0.50] (low-cost rank building)
+// All others       → Suggested Bid (HIDDEN POTENTIAL, THE WALL, ZOMBIE, etc.)
+function calcTargetBid(label, bid, minBid, maxBid) {
+  const STOP = ['GHOST TARGET','LEAKY BUCKET','LEAKY BUCKET V2','COMPETITOR TRAP'];
+  if (STOP.includes(label))        return 0;
+  if (label === 'VERIFIED STAR')   return r2(maxBid || bid);
+  if (label === 'UNDERVALUED ALPHA') return r2(bid * 1.10);
+  if (label === 'CASH COW')        return r2(minBid || bid);
+  if (label === 'QUICK WINS')      return r2(Math.min(0.50, Math.max(0.35, bid)));
+  return r2(bid); // HIDDEN POTENTIAL, THE WALL, ZOMBIE → Suggested Bid
+}
+
+// calcBidReason: short explanation for the target bid (used in export)
+function calcBidReason(label) {
+  const map = {
+    'VERIFIED STAR':     'Max Bid — SQP confirmed, defend share',
+    'UNDERVALUED ALPHA': 'Suggested × 110% — build rank, CR > market',
+    'CASH COW':          'Min Bid — already ranking, defend cheaply',
+    'QUICK WINS':        '$0.35–$0.50 — low-cost SEO rank building',
+    'HIDDEN POTENTIAL':  'Suggested Bid — aggressive push',
+    'THE WALL':          'Suggested Bid — consider ASIN targeting instead',
+    'ZOMBIE':            'Suggested Bid — review before using',
+    'GHOST TARGET':      '$0.00 — STOP: SQP Impressions=0',
+    'LEAKY BUCKET':      '$0.00 — STOP: fix listing first',
+    'LEAKY BUCKET V2':   '$0.00 — STOP: SQP clicks>0 but 0 purchases',
+    'COMPETITOR TRAP':   '$0.00 — STOP: competitor brand keyword',
+  };
+  return map[label] || 'Suggested Bid';
+}
+
+// renderBudgetForecaster: update Budget Forecaster widget in-place
+function renderBudgetForecaster() {
+  const el = document.getElementById('budget-forecaster');
+  if (!el) return;
+  const d = S.processed;
+  if (!d.length) { el.classList.add('hidden'); return; }
+
+  const price = parseFloat(document.getElementById('asin-price')?.value) || 0;
+
+  // VS + UA keywords with a positive target bid
+  const ppcKws = d.filter(r =>
+    (r.label === 'VERIFIED STAR' || r.label === 'UNDERVALUED ALPHA') && r.targetBid > 0
+  );
+  const recDailyBudget = ppcKws.reduce((s, r) => s + r.targetBid * 10, 0);
+
+  // SOG totals across all matched rows
+  const sogRows  = d.filter(r => r.sog !== null && !isNaN(r.sog));
+  const totalSOG = sogRows.reduce((s, r) => s + r.sog, 0);
+  const totalEstGap = price > 0 ? totalSOG * price : null;
+
+  const vsCount  = d.filter(r => r.label === 'VERIFIED STAR').length;
+  const uaCount  = d.filter(r => r.label === 'UNDERVALUED ALPHA').length;
+
+  el.classList.remove('hidden');
+
+  // KPI cards
+  document.getElementById('bf-grid').innerHTML = [
+    { val:`$${recDailyBudget.toFixed(2)}`,
+      lbl:'Recommended Daily Budget',
+      sub:'VS+UA × 10 clicks/kw' },
+    { val:`${vsCount + uaCount}`,
+      lbl:'Active PPC Keywords',
+      sub:'Verified Star + Undervalued Alpha' },
+    { val: totalSOG > 0 ? Math.round(totalSOG).toLocaleString() : '—',
+      lbl:'Total SOG (units)',
+      sub:'SQP first-party data' },
+    { val: totalEstGap !== null ? `$${Math.round(totalEstGap).toLocaleString()}` : '—',
+      lbl:'Est. Sales Gap ($)',
+      sub: price > 0 ? `SOG × $${price.toFixed(2)}` : 'Enter ASIN price above' },
+  ].map(k => `<div class="bf-card">
+    <div class="bf-val">${k.val}</div>
+    <div class="bf-lbl">${k.lbl}</div>
+    <div class="bf-lbl" style="color:#2a3a50">${k.sub}</div>
+  </div>`).join('');
+
+  // Keyword breakdown table (top 20 VS + UA)
+  const topKws = ppcKws.slice(0, 20);
+  let listHtml = '';
+  if (topKws.length) {
+    const rows = topKws.map(r => {
+      const gap = r.sog !== null && !isNaN(r.sog) && price > 0
+        ? `$${r2(r.sog * price).toLocaleString()}` : '—';
+      const icon = r.label === 'VERIFIED STAR' ? '⭐' : '💎';
+      return `<div class="bf-kw-row">
+        <span class="truncate" title="${esc(r.keyword)}">${esc(r.keyword)}<span class="bf-kw-lbl">${icon} ${r.label === 'VERIFIED STAR' ? 'VS' : 'UA'}</span></span>
+        <span style="text-align:right;color:var(--accent)">$${r.targetBid.toFixed(2)}</span>
+        <span style="text-align:right;color:var(--text2)">$${(r.targetBid * 10).toFixed(2)}</span>
+        <span style="text-align:right;color:var(--green)">${gap}</span>
+      </div>`;
+    }).join('');
+    listHtml = `<div class="bf-kw-hdr">
+      <span>Keyword</span>
+      <span style="text-align:right">Target Bid</span>
+      <span style="text-align:right">Daily$</span>
+      <span style="text-align:right">Est. Gap$</span>
+    </div>${rows}`;
+    if (ppcKws.length > 20) {
+      listHtml += `<div style="font-size:11px;color:var(--muted);padding:6px 0;text-align:center">+${ppcKws.length - 20} more VS/UA keywords — xem đầy đủ trong Excel export</div>`;
+    }
+  } else {
+    listHtml = '<div style="font-size:12px;color:var(--muted);padding:8px 0">Chưa có Verified Star hoặc Undervalued Alpha. Upload SQP CSV để kích hoạt Module 2 labels.</div>';
+  }
+  document.getElementById('bf-kw-list').innerHTML = listHtml;
+}
+
+function runAnalysis(){
+  const bids=S.rawRows.map(r=>getV(r,'bid')).filter(v=>v!==null);
+  const avgBid=bids.length?bids.reduce((a,b)=>a+b,0)/bids.length:0;
+
+  S.processed=S.rawRows.map((row,i)=>{
+    const kw    = row[S.colMap.keyword]??`Row ${i+2}`;
+    const sv    = getV(row,'sv')??0;
+    const or    = getV(row,'orgRank')??BIGNUM;
+    const rr    = getV(row,'recRank')??BIGNUM;
+    const cs    = getV(row,'clickShare')??0;
+    const cv    = getV(row,'convShare')??0;
+    const comp  = getV(row,'competing')??0;
+    const spon  = getV(row,'sponsored')??0;
+    const td    = getV(row,'titleDensity');
+    const bid   = getV(row,'bid')??0;
+    const minBid= getV(row,'minBid')??bid*0.70;
+    const maxBid= getV(row,'maxBid')??bid*1.35;
+    const top3  = getV(row,'top3');
+
+    const apr = sdiv(cv,cs)??0;
+    const rg  = or-rr;
+    const aps = sdiv(spon,comp);
+    const pes = bid>0?(sv*apr)/bid:0;
+    const estCost=sv*(P.ppc_ctr/100)*bid;
+    const dailyBgt=bid*10;
+
+    // ── SQP Left Merge (Module 1) ──
+    const kwNorm=normKw(String(kw));
+    const sqp=S.sqpLoaded?(S.sqpMap[kwNorm]||null):null;
+
+    // Lấy giá trị SQP (null nếu keyword không có trong SQP)
+    const sqpImp        = sqp?.impTotal        ??null;
+    const sqpClicks     = sqp?.clickTotal      ??null;
+    const sqpPurchases  = sqp?.purchTotal      ??null;  // Mkt Sales (first-party)
+    const sqpPurchRate  = sqp?.purchRate       ??null;  // % dạng 0-100
+    const sqpBrandShare = sqp?.purchBrandShare ??null;  // Brand Purchase Share % 0-100
+
+    // SOG = Mkt Sales × (1 − Brand Share / 100)
+    let sog=null;
+    if(sqpPurchases!==null && sqpBrandShare!==null && sqpPurchases>0){
+      sog=sqpPurchases*(1-sqpBrandShare/100);
+    }
+
+    // PES V2 = (SV × SQP_PurchRate/100) / Bid  — dùng first-party data
+    // Null-safe: chỉ tính khi có SQP Purchase Rate và bid > 0
+    let pesV2=null;
+    if(sqpPurchRate!==null && bid>0){
+      pesV2=(sv*(sqpPurchRate/100))/bid;
+    }
+
+    // ── Module 2: SQP-Aware Classification (ưu tiên hơn v1.1) ──
+    const v2label=classifyV2(
+      {orgRank:or===BIGNUM?null:or, recRank:rr===BIGNUM?null:rr},
+      sqp,
+      kwNorm,
+      S.sqpMarketAvgPR
+    );
+    let label = v2label ?? classify({orgRank:or,recRank:rr,apr,aps,sv,td,top3});
+    const isM2Label = v2label!==null; // dùng để hiển thị badge M2 trong bảng
+
+    // antiBias chỉ áp dụng cho nhãn Classic (không override Module 2)
+    let fl, flags;
+    if(isM2Label){
+      // Module 2 labels không bị ABA override — nhưng vẫn check HIGH_BURN flag
+      flags=[];
+      if(bid>P.ab_burn_usd||(avgBid>0&&bid>avgBid*P.ab_burn_mult)) flags.push('HIGH_BURN');
+      fl=label;
+    } else {
+      ({label:fl,flags}=antiBias(label,apr,top3,bid,avgBid));
+    }
+    const plan=actionPlan(fl,minBid,maxBid,flags);
+
+    // Module 3: smart target bid per label
+    const targetBid = calcTargetBid(fl, bid, minBid, maxBid);
+
+    return {
+      _raw:row, keyword:String(kw),
+      sv, orgRank:or===BIGNUM?null:or, recRank:rr===BIGNUM?null:rr,
+      clickShare:cs, convShare:cv,
+      apr, rg, aps:aps??0, pes, pesV2, bid, minBid, maxBid, estCost, dailyBgt,
+      titleDensity:td, top3, competing:comp, sponsored:spon,
+      label:fl, isM2Label, flags, plan,
+      // SQP fields (Module 1)
+      sqpMatched:sqp!==null,
+      sqpImp, sqpClicks, sqpPurchases, sqpPurchRate, sqpBrandShare, sog,
+      // Module 3
+      targetBid,
+    };
+  });
+  S.filtered=[...S.processed];
+  showResults();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════
+const CATS=[
+  // ── Module 2 (SQP-verified) — hiện trước ──
+  {key:'VERIFIED STAR',     icon:'⭐',cls:'vs', desc:'Confirmed top performer', m2:true},
+  {key:'GHOST TARGET',      icon:'👻',cls:'gt', desc:'Negative ngay',           m2:true},
+  {key:'UNDERVALUED ALPHA', icon:'💎',cls:'ua', desc:'Đẩy rank khẩn cấp',      m2:true},
+  {key:'LEAKY BUCKET V2',   icon:'🔴',cls:'lb2',desc:'Sửa listing (SQP proof)', m2:true},
+  {key:'COMPETITOR TRAP',   icon:'🚫',cls:'ct', desc:'Dừng Ads ngay',           m2:true},
+  // ── Classic (Cerebro-based) ──
+  {key:'CASH COW',         icon:'💰',cls:'cc', desc:'Defend position'},
+  {key:'HIDDEN POTENTIAL', icon:'🔵',cls:'hp', desc:'Aggressive push'},
+  {key:'THE WALL',         icon:'🧱',cls:'tw', desc:'ASIN targeting'},
+  {key:'LEAKY BUCKET',     icon:'🪣',cls:'lb', desc:'Fix listing first'},
+  {key:'QUICK WINS',       icon:'⚡',cls:'qw', desc:'SEO + low bid'},
+  {key:'ZOMBIE',           icon:'🧟',cls:'zb', desc:'Remove & save budget'},
+];
+const CC=[
+  {c:'#00d4aa'},{c:'#9b59b6'},{c:'#3498db'},{c:'#ff6b35'},{c:'#e91e63'},
+  {c:'#2ea043'},{c:'#388bfd'},{c:'#e74c3c'},{c:'#e67e22'},{c:'#f1c40f'},{c:'#6e7681'},
+];
+const LBL={
+  'VERIFIED STAR':'lbl-vs','GHOST TARGET':'lbl-gt',
+  'UNDERVALUED ALPHA':'lbl-ua','LEAKY BUCKET V2':'lbl-lb2','COMPETITOR TRAP':'lbl-ct',
+  'CASH COW':'lbl-cc','HIDDEN POTENTIAL':'lbl-hp','THE WALL':'lbl-tw',
+  'LEAKY BUCKET':'lbl-lb','QUICK WINS':'lbl-qw','ZOMBIE':'lbl-zb',
+};
+
+function showResults(){
+  hide('step-upload');hide('step-mapping');show('step-results');
+  renderStats();renderCatCards();renderDonut();renderAlerts();renderTable();renderPPCLabelTable();
+  renderSQPKPIs();
+  renderBudgetForecaster(); // Module 3
+}
+
+function renderStats(){
+  const d=S.processed, n=d.length; if(!n)return;
+  const avgAPR=d.reduce((s,r)=>s+r.apr,0)/n;
+  const avgPES=d.reduce((s,r)=>s+r.pes,0)/n;
+  const totCost=d.reduce((s,r)=>s+r.estCost,0);
+  const burnCnt=d.filter(r=>r.flags.includes('HIGH_BURN')).length;
+  document.getElementById('stats-grid').innerHTML=[
+    {val:n.toLocaleString(),     lbl:'Total Keywords'},
+    {val:avgAPR.toFixed(3),      lbl:'Avg. APR'},
+    {val:avgPES.toFixed(0),      lbl:'Avg. PES'},
+    {val:'$'+totCost.toFixed(0), lbl:'Est. Monthly Cost'},
+    {val:burnCnt,                lbl:'⚠️ High Burn Risk', hi:burnCnt>0},
+  ].map(s=>`<div class="stat-card"><div class="val" style="${s.hi?'color:var(--red)':''}">${s.val}</div><div class="lbl">${s.lbl}</div></div>`).join('');
+}
+
+function renderCatCards(){
+  const n=S.processed.length;
+  document.getElementById('cat-grid').innerHTML=CATS.map(c=>{
+    const cnt=S.processed.filter(r=>r.label===c.key).length;
+    const pct=n?((cnt/n)*100).toFixed(1):'0';
+    return `<div class="cat-card ${c.cls}" id="cat-${c.cls}" onclick="quickFilter('${c.key}')"><div class="emoji">${c.icon}</div><div class="cnt">${cnt}</div><div class="name">${c.key}</div><div class="pct">${pct}% · ${c.desc}</div></div>`;
+  }).join('');
+}
+
+function renderDonut(){
+  const ctx=document.getElementById('donut-chart').getContext('2d');
+  if(S.donutChart)S.donutChart.destroy();
+  const counts=CATS.map(c=>S.processed.filter(r=>r.label===c.key).length);
+  S.donutChart=new Chart(ctx,{type:'doughnut',data:{labels:CATS.map(c=>c.key),datasets:[{data:counts,backgroundColor:CC.map(x=>x.c),borderWidth:2,borderColor:'#161b27'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.label}: ${c.raw} (${((c.raw/S.processed.length)*100).toFixed(1)}%)`}}},cutout:'68%'}});
+  document.getElementById('donut-legend').innerHTML=CATS.map((c,i)=>`<div class="dl-item"><span class="dl-dot" style="background:${CC[i].c}"></span><span>${c.icon} ${c.key}</span></div>`).join('');
+}
+
+function renderAlerts(){
+  const d=S.processed;
+  const burn=d.filter(r=>r.flags.includes('HIGH_BURN'));
+  const wall=d.filter(r=>r.label==='THE WALL');
+  const leaky=d.filter(r=>r.label==='LEAKY BUCKET');
+  const bias=d.filter(r=>r.flags.includes('ABA_BIAS'));
+  let html='';
+  if(burn.length) html+=`<div class="alert alert-warn">⚠️ <strong>High Burn Risk (${burn.length} kws):</strong> Bid > $${P.ab_burn_usd} hoặc > ${P.ab_burn_mult}× avg. Ví dụ: ${burn.slice(0,4).map(r=>r.keyword).join(', ')}${burn.length>4?` +${burn.length-4} more`:''}</div>`;
+  if(bias.length) html+=`<div class="alert alert-warn">🛡️ <strong>ABA Anti-Bias (${bias.length} kws):</strong> APR > ${P.ab_apr} nhưng Top-3 Click Share > ${P.ab_top3}% → reclassified sang THE WALL.</div>`;
+  if(wall.length) html+=`<div class="alert alert-warn">🧱 <strong>The Wall (${wall.length} kws):</strong> Market bị brand lớn chiếm đóng. Dùng ASIN Targeting thay vì Keyword Ads.</div>`;
+  if(leaky.length) html+=`<div class="alert alert-warn">🪣 <strong>Leaky Bucket (${leaky.length} kws):</strong> Rank tốt nhưng không convert. Dừng Ads, sửa listing trước.</div>`;
+  document.getElementById('alerts-box').innerHTML=html;
+}
+
+function renderTable(){
+  const tbody=document.getElementById('tbl-body');
+  const n=S.filtered.length;
+  document.getElementById('showing').textContent=n.toLocaleString();
+  document.getElementById('total').textContent=S.processed.length.toLocaleString();
+  document.getElementById('showing-info').textContent=`${n} result${n!==1?'s':''}`;
+  const sqpOn=S.sqpLoaded;
+  const colSpan=sqpOn?20:15; // 15 base cols (incl. Target Bid) + 5 SQP cols
+  if(!n){tbody.innerHTML=`<tr><td colspan="${colSpan}" class="empty">Không có keyword nào khớp filter.</td></tr>`;return;}
+
+  // Cập nhật header table với SQP columns
+  const thead=document.querySelector('#tbl-body').closest('table').querySelector('thead tr');
+  // Xóa SQP header cũ nếu có
+  thead.querySelectorAll('.sqp-th').forEach(th=>th.remove());
+  if(sqpOn){
+    // Chèn trước cột "Label" (index 11 after Target Bid added to static header)
+    const labelTh=thead.children[11];
+    const sqpHeaders=[
+      {tip:'SQP Impressions: Total Count — Tổng lượt hiển thị thị trường', label:'SQP Impr'},
+      {tip:'SQP Clicks: Total Count — Tổng lượt click thị trường',          label:'SQP Clicks'},
+      {tip:'SQP Purchases: Total Count — Tổng đơn hàng toàn thị trường (First-party Amazon data, ưu tiên hơn Cerebro Keyword Sales)', label:'Mkt Sales★'},
+      {tip:'SQP Purchases: Brand Share % — % đơn hàng thuộc về brand bạn (0-100)',  label:'Brand%'},
+      {tip:'SOG = Mkt Sales × (1 − Brand%/100) — Đơn hàng thị trường chưa được chiếm lĩnh', label:'SOG'},
+    ];
+    sqpHeaders.forEach(h=>{
+      const th=document.createElement('th');
+      th.className='num sqp-th';
+      th.dataset.tip=h.tip;
+      th.textContent=h.label;
+      thead.insertBefore(th,labelTh);
+    });
+  }
+
+  tbody.innerHTML=S.filtered.map((r,i)=>{
+    const lc=LBL[r.label]??'lbl-zb';
+    const burn=r.flags.includes('HIGH_BURN');
+    const orgC=r.orgRank!==null?(r.orgRank<=P.cc_rank?'hi':r.orgRank>P.hp_org?'lo':''):'';
+    const aprC=r.apr>=P.cc_apr?'hi':r.apr<P.lb_apr?'lo':r.apr<P.cc_apr?'mid':'';
+
+    // SQP cells — chỉ render khi sqpOn
+    const sogClass=r.sog!==null?(r.sog>1000?'sog-hi':'sog-lo'):'';
+    const sqpCells=sqpOn?`
+      <td class="num sqp-col">${r.sqpImp!==null?r.sqpImp.toLocaleString():'—'}</td>
+      <td class="num sqp-col">${r.sqpClicks!==null?r.sqpClicks.toLocaleString():'—'}</td>
+      <td class="num sqp-col">${r.sqpPurchases!==null?r.sqpPurchases.toLocaleString():'—'}</td>
+      <td class="num sqp-col">${r.sqpBrandShare!==null?r.sqpBrandShare.toFixed(2)+'%':'—'}</td>
+      <td class="num sqp-col ${sogClass}">${r.sog!==null?Math.round(r.sog).toLocaleString():'—'}</td>`:'';
+
+    // PES V2 color class (Module 3)
+    const pesv2C = r.pesV2===null ? '' : r.pesV2>=2 ? 'pesv2-hi' : r.pesV2>=0.5 ? 'pesv2-mid' : 'pesv2-lo';
+    // Target Bid cell styling (Module 3)
+    const tbStyle = r.targetBid===0 ? 'color:var(--muted)' : r.targetBid>r.bid ? 'color:var(--green);font-weight:700' : '';
+
+    return `<tr>
+      <td style="color:var(--muted)">${i+1}</td>
+      <td class="truncate" title="${esc(r.keyword)}">${esc(r.keyword)}</td>
+      <td class="num">${r.sv.toLocaleString()}</td>
+      <td class="num ${orgC}">${r.orgRank??'—'}</td>
+      <td class="num">${r.recRank??'—'}</td>
+      <td class="num ${aprC}">${r.apr.toFixed(3)}</td>
+      <td class="num">${r.aps.toFixed(3)}</td>
+      <td class="num">${r.pes.toFixed(1)}</td>
+      <td class="num sqp-col ${pesv2C}">${r.pesV2!==null?r.pesV2.toFixed(1):'—'}</td>
+      <td class="num">$${r.bid.toFixed(2)}</td>
+      <td class="num" style="${tbStyle}">${r.targetBid===0?'—':'$'+r.targetBid.toFixed(2)}</td>
+      <td class="num">$${r.estCost.toFixed(2)}</td>
+      ${sqpCells}
+      <td><span class="lbl ${lc}">${r.label}</span>${r.isM2Label?'<span class="lbl lbl-m2">SQP★</span>':''}${burn?'<span class="lbl lbl-burn">BURN</span>':''}</td>
+      <td style="white-space:normal;font-size:11.5px;min-width:270px;line-height:1.5">${esc(r.plan)}</td>
+      <td class="num">$${r.dailyBgt.toFixed(2)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function quickFilter(label){
+  document.getElementById('filter-label').value=label;
+  applyFilters();
+  CATS.forEach(c=>document.getElementById('cat-'+c.cls)?.classList.remove('active'));
+  const ac=CATS.find(c=>c.key===label);
+  if(ac)document.getElementById('cat-'+ac.cls)?.classList.add('active');
+}
+
+function applyFilters(){
+  const lf=document.getElementById('filter-label').value;
+  const kf=document.getElementById('filter-kw').value.toLowerCase().trim();
+  const sf=document.getElementById('sort-by').value;
+  const bf=document.getElementById('filter-burn').value;
+  S.filtered=S.processed.filter(r=>{
+    if(lf&&r.label!==lf)return false;
+    if(kf&&!r.keyword.toLowerCase().includes(kf))return false;
+    if(bf==='burn'&&!r.flags.includes('HIGH_BURN'))return false;
+    return true;
+  });
+  if(sf){
+    const sorts={sv_desc:(a,b)=>b.sv-a.sv,apr_desc:(a,b)=>b.apr-a.apr,pes_desc:(a,b)=>b.pes-a.pes,pesv2_desc:(a,b)=>(b.pesV2??-1)-(a.pesV2??-1),sog_desc:(a,b)=>(b.sog??-1)-(a.sog??-1),targetbid_desc:(a,b)=>b.targetBid-a.targetBid,orgrank_asc:(a,b)=>(a.orgRank??9999)-(b.orgRank??9999),bid_asc:(a,b)=>a.bid-b.bid,cost_desc:(a,b)=>b.estCost-a.estCost};
+    if(sorts[sf])S.filtered.sort(sorts[sf]);
+  }
+  renderTable();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MAIN EXPORT
+// ═══════════════════════════════════════════════════════════════
+function exportExcel(){
+  if(!S.processed.length)return;
+  const rows=S.processed.map(r=>{
+    const out={};
+    S.headers.forEach((h,i)=>{out[h]=r._raw[i]??'';});
+    out['APR']=r4(r.apr); out['RG (Relevancy Gap)']=r4(r.rg); out['APS']=r4(r.aps);
+    out['PES_v1 (Cerebro)']=r2(r.pes);
+    out['PES_v2 (SQP★)']  =(r.pesV2!==null&&!isNaN(r.pesV2))?r2(r.pesV2):'';
+    out['Est. Monthly Cost ($)']=r2(r.estCost);
+    out['Strategic_Label']=r.label;
+    out['SQP_Verified_Label']=r.isM2Label?'YES':'NO';
+    out['High_Burn_Risk']=r.flags.includes('HIGH_BURN')?'YES':'NO';
+    out['ABA_Bias_Reclassified']=r.flags.includes('ABA_BIAS')?'YES':'NO';
+    out['Efficiency_Index']=r2(r.pes); out['Action_Plan']=r.plan;
+    out['Recommended_Daily_Budget ($)']=r2(r.dailyBgt);
+    // ── SQP columns (Module 1) ──
+    if(S.sqpLoaded){
+      out['SQP_Matched']              = r.sqpMatched?'YES':'NO';
+      out['SQP_Impressions']          = r.sqpImp??'';
+      out['SQP_Clicks']               = r.sqpClicks??'';
+      out['SQP_Purchases']            = r.sqpPurchases??'';
+      out['SQP_Purchase_Rate_%']      = r.sqpPurchRate!==null?r4(r.sqpPurchRate):'';
+      out['SQP_Brand_Purchase_Share_%']= r.sqpBrandShare!==null?r4(r.sqpBrandShare):'';
+      out['SOG_Sales_Opportunity_Gap']= (r.sog!==null&&!isNaN(r.sog))?r2(r.sog):'';
+    }
+    return out;
+  });
+  const summary=CATS.map(c=>{const kws=S.processed.filter(r=>r.label===c.key);const n=kws.length;return{'Label':c.key,'Count':n,'Pct':n?`${((n/S.processed.length)*100).toFixed(1)}%`:'0%','Avg APR':n?r4(kws.reduce((s,r)=>s+r.apr,0)/n):0,'Avg PES':n?r2(kws.reduce((s,r)=>s+r.pes,0)/n):0,'Est. Monthly Cost ($)':r2(kws.reduce((s,r)=>s+r.estCost,0))};});
+  const wb=XLSX.utils.book_new();
+  const ws1=XLSX.utils.json_to_sheet(rows); ws1['!cols']=Object.keys(rows[0]).map(k=>({wch:Math.min(Math.max(k.length+2,12),50)}));
+  XLSX.utils.book_append_sheet(wb,ws1,'Keyword Matrix');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(summary),'Summary');
+  const burnRows=S.processed.filter(r=>r.flags.includes('HIGH_BURN')).map(r=>({'Keyword':r.keyword,'Label':r.label,'Bid':r2(r.bid),'APR':r4(r.apr),'Est. Monthly Cost':r2(r.estCost),'Action Plan':r.plan}));
+  if(burnRows.length)XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(burnRows),'High Burn Risk');
+
+  // ── Module 3: Amazon_PPC_Upload + PPC_Reference sheets ──
+  // Chỉ xuất keyword có targetBid > 0 (loại Ghost/LB/CT/$0)
+  const ppcEligible=S.processed.filter(r=>r.targetBid>0);
+
+  if(ppcEligible.length){
+    // ── Sheet A: Amazon_PPC_Upload ──
+    // Đúng chuẩn Amazon SP Bulk File — chỉ các cột Amazon nhận dạng được
+    // Hướng dẫn: điền Campaign Name & Ad Group Name vào cột trống trước khi upload
+    const PPC_INSTR=['[HƯỚNG DẪN] Điền Campaign Name và Ad Group Name vào 2 cột bên phải trước khi upload lên Campaign Manager → Bulk Operations','','','','','','',''];
+    const PPC_HDR  =['Record Type','Entity','Operation','Campaign Name','Ad Group Name','State','Keyword or Product Targeting Expression','Match Type','Bid'];
+    const uploadData=ppcEligible.map(r=>[
+      'Sponsored Products', // Record Type — Amazon SP
+      'Keyword',            // Entity
+      'Create',             // Operation
+      '',                   // Campaign Name — user fills
+      '',                   // Ad Group Name — user fills
+      'enabled',            // State
+      r.keyword,            // Keyword or Product Targeting Expression (Amazon exact col name)
+      'Exact',              // Match Type
+      r2(r.targetBid),      // Bid (number, 2dp — r2() ensures Number type)
+    ]);
+    const wsPPC=XLSX.utils.aoa_to_sheet([PPC_INSTR, PPC_HDR, ...uploadData]);
+    // Style instruction row: merge + highlight
+    wsPPC['!cols']=PPC_HDR.map((h,i)=>({wch:i===6?45:Math.max(h.length+2,16)}));
+    XLSX.utils.book_append_sheet(wb,wsPPC,'Amazon_PPC_Upload');
+
+    // ── Sheet B: PPC_Reference ──
+    // Dữ liệu phân tích đầy đủ — dùng để review, KHÔNG upload lên Amazon
+    const refRows=ppcEligible.map(r=>({
+      'Keyword':           r.keyword,
+      'Strategic Label':   r.label,
+      'SQP Verified':      r.isM2Label?'YES':'NO',
+      'Target Bid ($)':    r2(r.targetBid),
+      'Suggested Bid ($)': r2(r.bid),
+      'Bid Δ':             r2(r.targetBid-r.bid),   // +/- vs Cerebro suggested
+      'Daily Budget ($)':  r2(r.targetBid*10),
+      'Target Bid Reason': calcBidReason(r.label),
+      'SOG (units)':       (r.sog!==null&&!isNaN(r.sog))?r2(r.sog):'',
+      'PES V2':            r.pesV2!==null?r2(r.pesV2):'',
+      'Match Type':        'Exact',
+    }));
+    const wsRef=XLSX.utils.json_to_sheet(refRows);
+    wsRef['!cols']=Object.keys(refRows[0]).map(k=>({wch:Math.min(Math.max(k.length+2,14),45)}));
+    XLSX.utils.book_append_sheet(wb,wsRef,'PPC_Reference');
+  }
+
+  XLSX.writeFile(wb,'Processed_Matrix.xlsx');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PPC SECTION TOGGLE
+// ═══════════════════════════════════════════════════════════════
+function togglePPCSection(){
+  const body=document.getElementById('ppc-body');
+  const tog=document.getElementById('ppc-toggle');
+  const open=body.style.display==='none';
+  body.style.display=open?'block':'none';
+  tog.classList.toggle('open',open);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PPC TEMPLATE UPLOAD
+// ═══════════════════════════════════════════════════════════════
+document.getElementById('ppc-file-in').addEventListener('change', e=>{
+  if(e.target.files[0])readPPCFile(e.target.files[0]);
+});
+
+function readPPCFile(file){
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      S.ppcTemplate=XLSX.read(ev.target.result,{type:'binary'});
+      document.getElementById('ppc-upload-txt').innerHTML=`<span class="file-ok">✅ ${file.name} — đã load xong (${S.ppcTemplate.SheetNames.length} sheets)</span>`;
+      document.getElementById('ppc-cfg-section').style.display='flex';
+      updatePPCPreview();
+    }catch(e){alert('Lỗi đọc file PPC: '+e.message);}
+  };
+  reader.readAsBinaryString(file);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PPC LABEL TABLE
+// ═══════════════════════════════════════════════════════════════
+const LABEL_COLORS={'CASH COW':'lbl-cc','HIDDEN POTENTIAL':'lbl-hp','THE WALL':'lbl-tw','LEAKY BUCKET':'lbl-lb','QUICK WINS':'lbl-qw','ZOMBIE':'lbl-zb'};
+
+function renderPPCLabelTable(){
+  const tbody=document.getElementById('ppc-label-tbody');
+  if(!tbody)return;
+  tbody.innerHTML=CATS.map(c=>{
+    const k=c.key, lc=LABEL_COLORS[k];
+    const inc=ppcCfg.include[k];
+    const bs=ppcCfg.bidSrc[k];
+    const cb=ppcCfg.custBid[k]||0;
+    const mt=ppcCfg.match[k];
+    const bg=ppcCfg.budget[k]||2;
+    return `<tr class="${inc?'':'row-disabled'}" id="ppc-row-${c.cls}">
+      <td style="font-size:18px">${c.icon}</td>
+      <td><span class="lbl ${lc}">${k}</span></td>
+      <td style="text-align:center"><input type="checkbox" ${inc?'checked':''} onchange="toggleLabelInclude('${k}',this.checked)"></td>
+      <td>
+        <select onchange="setPPCCfg('bidSrc','${k}',this.value)" ${inc?'':'disabled'}>
+          <option value="min"   ${bs==='min'?'selected':''}>Min Bid</option>
+          <option value="suggested" ${bs==='suggested'?'selected':''}>Suggested</option>
+          <option value="max"   ${bs==='max'?'selected':''}>Max Bid</option>
+          <option value="custom" ${bs==='custom'?'selected':''}>Custom $</option>
+        </select>
+      </td>
+      <td><input type="number" value="${cb}" step="0.01" min="0" onchange="setPPCCfg('custBid','${k}',+this.value)" ${inc&&bs==='custom'?'':'disabled'} style="${inc&&bs==='custom'?'':'opacity:.3'}"></td>
+      <td>
+        <select onchange="setPPCCfg('match','${k}',this.value)" ${inc?'':'disabled'}>
+          <option value="exact"  ${mt==='exact'?'selected':''}>exact</option>
+          <option value="phrase" ${mt==='phrase'?'selected':''}>phrase</option>
+          <option value="broad"  ${mt==='broad'?'selected':''}>broad</option>
+        </select>
+      </td>
+      <td><input type="number" value="${bg}" step="0.5" min="0.5" onchange="setPPCCfg('budget','${k}',+this.value)" ${inc?'':'disabled'}></td>
+    </tr>`;
+  }).join('');
+}
+
+function toggleLabelInclude(key,val){
+  ppcCfg.include[key]=val;
+  savePPCCfg();
+  renderPPCLabelTable();
+  updatePPCPreview();
+}
+function setPPCCfg(prop,key,val){
+  ppcCfg[prop][key]=val;
+  savePPCCfg();
+  updatePPCPreview();
+  if(prop==='bidSrc') renderPPCLabelTable();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PPC PREVIEW
+// ═══════════════════════════════════════════════════════════════
+function updatePPCPreview(){
+  if(!S.processed.length)return;
+  const included=S.processed.filter(r=>ppcCfg.include[r.label]);
+  const prefix=document.getElementById('cfg_prefix')?.value||'KW';
+  const useDate=document.getElementById('cfg_use_date')?.value==='1';
+  const todayStr=fmtDate(new Date());
+  const exKW=included[0]?.keyword||'sample keyword';
+  const campName=buildCampName(exKW,prefix,useDate,todayStr);
+  const byLabel=Object.fromEntries(CATS.map(c=>[c.key,included.filter(r=>r.label===c.key).length]));
+  const estTotalBid=included.reduce((s,r)=>s+getReqBid(r),0);
+  const preview=document.getElementById('ppc-preview');
+  if(!preview)return;
+  preview.innerHTML=`
+    <div class="ppc-preview-stat"><span>📦 Tổng keywords sẽ xử lý</span><strong>${included.length} / ${S.processed.length}</strong></div>
+    <div class="ppc-preview-stat"><span>💰 CASH COW</span><strong>${byLabel['CASH COW']}</strong></div>
+    <div class="ppc-preview-stat"><span>🔵 HIDDEN POTENTIAL</span><strong>${byLabel['HIDDEN POTENTIAL']}</strong></div>
+    <div class="ppc-preview-stat"><span>⚡ QUICK WINS</span><strong>${byLabel['QUICK WINS']}</strong></div>
+    <div class="ppc-preview-stat"><span>📋 Tên campaign mẫu</span><strong style="font-size:10.5px;color:#6090d0">${esc(campName)}</strong></div>
+    <div class="ppc-preview-stat"><span>💸 Est. tổng bid/ngày (×10 clicks)</span><strong>$${(estTotalBid*10).toFixed(2)}</strong></div>
+  `;
+}
+
+function getReqBid(r){
+  const src=ppcCfg.bidSrc[r.label];
+  let bid;
+  if(src==='min')      bid = r.minBid||r.bid;
+  else if(src==='max') bid = r.maxBid||r.bid;
+  else if(src==='custom') bid = ppcCfg.custBid[r.label]||r.bid;
+  else bid = r.bid;
+  // Fallback: use Module 3 targetBid, then minimum floor $0.10
+  return bid || r.targetBid || 0.10;
+}
+
+function buildCampName(kw,prefix,useDate,dateStr){
+  const parts=[];
+  if(prefix)parts.push(prefix);
+  if(useDate)parts.push(dateStr);
+  parts.push(kw);
+  return parts.join('_');
+}
+function fmtDate(d){
+  const dd=String(d.getDate()).padStart(2,'0');
+  const mm=String(d.getMonth()+1).padStart(2,'0');
+  const yyyy=d.getFullYear();
+  return `${dd}${mm}${yyyy}`;
+}
+function fmtDateISO(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PROCESS TO PPC — GENERATE & SAVE
+// ═══════════════════════════════════════════════════════════════
+async function processToPPC(){
+  if(!S.ppcTemplate){alert('Vui lòng upload file PPC template trước.');return;}
+  if(!S.processed.length){alert('Chưa có kết quả phân tích keyword.');return;}
+
+  const btn=document.getElementById('btn-process-ppc');
+  btn.disabled=true; btn.textContent='⏳ Đang xử lý...';
+
+  try{
+    const prefix  = document.getElementById('cfg_prefix').value||'KW';
+    const sku     = document.getElementById('cfg_sku').value||'';
+    const bidding = document.getElementById('cfg_bidding').value;
+    const state   = document.getElementById('cfg_state').value;
+    const portfolio= document.getElementById('cfg_portfolio').value||'';
+    const useDate = document.getElementById('cfg_use_date').value==='1';
+
+    const today      = new Date();
+    const todayDDMM  = fmtDate(today);
+    const todayISO   = fmtDateISO(today);
+
+    const included = S.processed.filter(r=>ppcCfg.include[r.label]);
+    if(!included.length){alert('Không có keyword nào được chọn. Kiểm tra lại Include checkbox.');btn.disabled=false;btn.innerHTML='🚀 Generate & Save PPC File';return;}
+
+    // Build data arrays
+    const campRows=[], agRows=[], paRows=[], kwRows=[];
+
+    for(const r of included){
+      const campName=buildCampName(r.keyword,prefix,useDate,todayDDMM);
+      const bid=getReqBid(r);
+      const budget=ppcCfg.budget[r.label]||r.dailyBgt;
+
+      campRows.push([campName, budget.toFixed(2), 'MANUAL', state, todayISO, '', bidding, portfolio]);
+      agRows .push([campName, campName, bid.toFixed(2), state]);
+      if(sku) paRows.push([campName, campName, sku, state]);
+      kwRows .push([campName, campName, r.keyword, ppcCfg.match[r.label], bid.toFixed(2), state]);
+    }
+
+    // Sheet headers & label rows (preserved from original)
+    const CAMP_HDR  =['Campaign Name','Daily Budget (USD)','Targeting Type','State','Start Date (YYYYMMDD)','End Date (YYYYMMDD)','Bidding Strategy','Portfolio Name'];
+    const CAMP_LBL  =['Bắt buộc','Bắt buộc','Bắt buộc','Bắt buộc','Tùy chọn','Tùy chọn','Bắt buộc','Tùy chọn'];
+    const AG_HDR    =['Campaign Name','Ad Group Name','Default Bid (USD)','State'];
+    const AG_LBL    =['Bắt buộc','Bắt buộc','Bắt buộc','Bắt buộc'];
+    const PA_HDR    =['Campaign Name','Ad Group Name','SKU','State'];
+    const PA_LBL    =['Bắt buộc','Bắt buộc','Bắt buộc','Bắt buộc'];
+    const KW_HDR    =['Campaign Name','Ad Group Name','Keyword Text','Match Type','Bid (USD)','State'];
+    const KW_LBL    =['Bắt buộc','Bắt buộc','Bắt buộc','Bắt buộc','Tùy chọn','Bắt buộc'];
+    const PT_HDR    =['Campaign Name','Ad Group Name','ASIN','Bid (USD)','State'];
+    const PT_LBL    =['Bắt buộc','Bắt buộc','Bắt buộc','Tùy chọn','Bắt buộc'];
+    const NK_HDR    =['Campaign Name','Ad Group Name (bo trong = campaign-level)','Keyword Text','Match Type','State'];
+    const NK_LBL    =['Bắt buộc','Tùy chọn','Bắt buộc','Bắt buộc','Bắt buộc'];
+    const NP_HDR    =['Campaign Name','Ad Group Name','ASIN','State'];
+    const NP_LBL    =['Bắt buộc','Bắt buộc','Bắt buộc','Bắt buộc'];
+    const BA_HDR    =['Campaign Name','Placement','Percentage'];
+    const BA_LBL    =['Bắt buộc','Bắt buộc','Bắt buộc'];
+
+    const mkSheet=(hdr,lbl,data)=>{
+      const ws=XLSX.utils.aoa_to_sheet([hdr,lbl,...data]);
+      ws['!cols']=hdr.map(h=>({wch:Math.max(h.length+2,16)}));
+      return ws;
+    };
+
+    // Clone original workbook to preserve Huong dan sheet
+    const wb=XLSX.utils.book_new();
+
+    // Sheet 0: Huong dan — copy from template
+    const origHD=S.ppcTemplate.Sheets[S.ppcTemplate.SheetNames[0]];
+    if(origHD) XLSX.utils.book_append_sheet(wb,origHD,'0. Huong dan');
+
+    // Sheets 1-8: filled with new data
+    XLSX.utils.book_append_sheet(wb, mkSheet(CAMP_HDR,CAMP_LBL,campRows),  '1. Campaigns');
+    XLSX.utils.book_append_sheet(wb, mkSheet(AG_HDR,AG_LBL,agRows),        '2. Ad Groups');
+    XLSX.utils.book_append_sheet(wb, mkSheet(PA_HDR,PA_LBL,sku?paRows:[]), '3. Product Ads');
+    XLSX.utils.book_append_sheet(wb, mkSheet(KW_HDR,KW_LBL,kwRows),        '4. Keywords');
+    XLSX.utils.book_append_sheet(wb, mkSheet(PT_HDR,PT_LBL,[]),             '5. Product Targets');
+    XLSX.utils.book_append_sheet(wb, mkSheet(NK_HDR,NK_LBL,[]),             '6. Negative Keywords');
+    XLSX.utils.book_append_sheet(wb, mkSheet(NP_HDR,NP_LBL,[]),             '7. Negative Product Targets');
+    XLSX.utils.book_append_sheet(wb, mkSheet(BA_HDR,BA_LBL,[]),             '8. Bidding Adjustments');
+
+    const wbout=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+    const blob=new Blob([wbout],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const suggestedName=`Amazon_PPC_Input_${todayDDMM}.xlsx`;
+
+    await saveAsFile(blob, suggestedName);
+  }finally{
+    btn.disabled=false;
+    btn.innerHTML='🚀 Generate & Save PPC File';
+  }
+}
+
+// Save As — File System Access API với fallback
+async function saveAsFile(blob, name){
+  if(window.showSaveFilePicker){
+    try{
+      const fh=await window.showSaveFilePicker({
+        suggestedName:name,
+        types:[{description:'Excel Workbook',accept:{'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':['.xlsx']}}],
+      });
+      const w=await fh.createWritable();
+      await w.write(blob);
+      await w.close();
+      return;
+    }catch(e){
+      if(e.name==='AbortError')return; // user cancelled
+      // fall through to download
+    }
+  }
+  // Fallback: regular download
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),3000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════════
+function show(id){document.getElementById(id).classList.remove('hidden');}
+function hide(id){document.getElementById(id).classList.add('hidden');}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function r2(n){const v=+(n??0);return isNaN(v)?0:Math.round(v*100)/100;}
+function r4(n){const v=+(n??0);return isNaN(v)?0:Math.round(v*10000)/10000;}
+
+function resetAll(){
+  S={
+    headers:[],rawRows:[],colMap:{},processed:[],filtered:[],
+    donutChart:null,ppcTemplate:null,
+    sqpMap:{},sqpLoaded:false,sqpMarketAvgPR:0,
+  };
+  document.getElementById('file-in').value='';
+  document.getElementById('ppc-file-in').value='';
+  document.getElementById('ppc-upload-txt').innerHTML='📄 Click để chọn file <strong>Amazon_PPC_Input.xlsx</strong>';
+  document.getElementById('ppc-cfg-section').style.display='none';
+  document.getElementById('ppc-body').style.display='none';
+  document.getElementById('ppc-toggle').classList.remove('open');
+  // Reset SQP banner
+  document.getElementById('sqp-drop-zone').innerHTML='📂 Upload SQP CSV';
+  document.getElementById('sqp-drop-zone').style.cursor='pointer';
+  document.getElementById('sqp-loaded-row').classList.add('hidden');
+  document.getElementById('sqp-kpi-strip').classList.add('hidden');
+  document.getElementById('sqp-file-in').value='';
+  show('step-upload'); hide('step-mapping'); hide('step-results');
+}
+
+// Init — render admin inputs on load
+renderAdminInputs();
+</script>
+</body>
+</html>
